@@ -17,6 +17,7 @@ namespace Windows_Forms_CORE_CHAT_UGH
         public const string C_MOD = "!mod";
         public const string C_MODS = "!mods";
         public const string C_KICK   = "!kick";
+        public const string C_EXIT   = "!exit";
         public const string SPACE   = " ";
     }
 }

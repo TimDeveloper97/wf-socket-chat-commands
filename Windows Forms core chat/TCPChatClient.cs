@@ -12,6 +12,9 @@ namespace Windows_Forms_Chat
     public class TCPChatClient : TCPChatBase
     {
         public string _name = null;
+        public static List<string> _commands
+            = new List<string> { Common.C_USERNAME, Common.C_ABOUT, Common.C_COMMANDS, Common.C_WHO,
+        Common.C_MOD, Common.C_KICK, Common.C_USER, Common.C_MODS, Common.C_WHISPER, Common.C_EXIT};
         //public static TCPChatClient tcpChatClient;
         public Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         public ClientSocket clientSocket = new ClientSocket();
@@ -52,6 +55,7 @@ namespace Windows_Forms_Chat
                 {
                     attempts++;
                     SetChat("Connection attempt " + attempts);
+
                     // Change IPAddress.Loopback to a remote IP to connect to a remote host.
                     socket.Connect(serverIP, serverPort);
                 }
@@ -69,32 +73,87 @@ namespace Windows_Forms_Chat
 
         public void SendString(string text)
         {
+            var existCommand = text.Trim()[0] == '!';
+            if (existCommand)
+            {
+                var split = text.Split(' ');
+                var nameCommand = split[0].Trim().ToLower();
+                if (!_commands.Contains(nameCommand))
+                {
+                    MessageBox.Show("Command not correct.");
+                    return;
+                }
+            }
+
+            #region handle commands
+            if (text.ToLower().Contains(Common.C_USERNAME + Common.SPACE))
+            {
+                // username has set
+                if (!string.IsNullOrEmpty(_name))
+                {
+                    MessageBox.Show("Command fail");
+                    return;
+                }
+            }
+            else if (!string.IsNullOrEmpty(_name)
+                && text.ToLower().Contains(Common.C_USER + Common.SPACE))
+            {
+                //check new username empty
+                var newusername = text.Replace(Common.C_USER, "").Trim();
+                if (string.IsNullOrEmpty(newusername))
+                {
+                    MessageBox.Show("New username can't null or empty");
+                    return;
+                }
+                else
+                {
+                    byte[] buffer = Encoding.ASCII.GetBytes(text + $";{_name}");
+                    socket.Send(buffer, 0, buffer.Length, SocketFlags.None);
+                    return;
+                }
+            }
+            else if (text.ToLower().Contains(Common.C_WHISPER + Common.SPACE))
+            {
+                //check new username empty
+                var target = text.Replace(Common.C_WHISPER, "").Trim();
+                if (string.IsNullOrEmpty(target))
+                {
+                    MessageBox.Show("Target username can't null or empty");
+                    return;
+                }
+            }
+
+            #endregion
+
             //checked username exist
-            if (_name == null
-                && !text.ToLower().Contains(Common.C_USERNAME + Common.SPACE))
+            if (_name == null)
             {
-                MessageBox.Show("You must enter name befor chat");
-                return;
-            }
+                if (!text.ToLower().Contains(Common.C_USERNAME + Common.SPACE))
+                {
+                    MessageBox.Show("You must enter name befor chat");
+                    return;
+                }
 
-            //check username empty
-            var username = text.Replace(Common.C_USERNAME, "").Trim();
-            if (string.IsNullOrEmpty(username))
+                //check username empty
+                var username = text.Replace(Common.C_USERNAME, "").Trim();
+                if (string.IsNullOrEmpty(username))
+                {
+                    MessageBox.Show("Username can't null or empty");
+                    return;
+                }
+                else
+                {
+                    _name = username;
+                    byte[] buffer = Encoding.ASCII.GetBytes(text);
+                    socket.Send(buffer, 0, buffer.Length, SocketFlags.None);
+                }
+            }
+            else
             {
-                MessageBox.Show("Username can't null or empty");
-                return;
+                var data = _name == null ? text : $"[{_name}] " + text;
+                byte[] buffer = Encoding.ASCII.GetBytes(data);
+                socket.Send(buffer, 0, buffer.Length, SocketFlags.None);
             }
-
-            // username has set
-            //if (!string.IsNullOrEmpty(_name)
-            //    && text.ToLower().Contains(Common.C_USERNAME + Common.SPACE))
-            //{
-            //    MessageBox.Show("Command fail");
-            //    return;
-            //}
-
-            byte[] buffer = Encoding.ASCII.GetBytes(text);
-            socket.Send(buffer, 0, buffer.Length, SocketFlags.None);
         }
 
 
@@ -125,11 +184,17 @@ namespace Windows_Forms_Chat
             //text is from server but could have been broadcast from the other clients
             AddToChat(text);
 
-            #region handle add and check user name
+            #region handle commands
             if (text.ToLower().Contains(Common.C_KICK))
             {
                 Close();
                 return;
+            }
+            else if (!string.IsNullOrEmpty(_name)
+               && text.ToLower().Contains(Common.C_USER + Common.SPACE))
+            {
+                //update new username empty
+                _name = text.Replace(Common.C_USER, "").Trim();
             }
 
             #endregion

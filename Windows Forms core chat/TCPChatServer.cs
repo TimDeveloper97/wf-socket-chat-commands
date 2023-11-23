@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Windows.Forms;
 using Windows_Forms_CORE_CHAT_UGH;
+using System.Linq;
 
 //https://github.com/AbleOpus/NetworkingSamples/blob/master/MultiServer/Program.cs
 namespace Windows_Forms_Chat
@@ -104,13 +105,14 @@ namespace Windows_Forms_Chat
             byte[] recBuf = new byte[received];
             Array.Copy(currentClientSocket.buffer, recBuf, received);
             string text = Encoding.ASCII.GetString(recBuf);
-            
-            AddToChat(text);
 
-            #region handle add and check user name
+            if (!text.ToLower().Contains(Common.C_USER + Common.SPACE))
+                AddToChat(text);
+
+            #region handle commands
             if (text.ToLower() == "!commands") // Client requested time
             {
-                byte[] data = Encoding.ASCII.GetBytes("Commands are !commands !about !who !whisper !exit");
+                byte[] data = Encoding.ASCII.GetBytes("Commands are " + String.Join(" ", TCPChatClient._commands));
                 currentClientSocket.socket.Send(data);
                 AddToChat("Commands sent to client");
             }
@@ -126,7 +128,7 @@ namespace Windows_Forms_Chat
             else if (text.ToLower().Contains(Common.C_USERNAME))
             {
                 var username = text.Replace(Common.C_USERNAME, "").Trim();
-                
+
                 //user exist close socket 
                 if (_names.Contains(username))
                 {
@@ -143,7 +145,85 @@ namespace Windows_Forms_Chat
                     return;
                 }
                 else
-                    _names.Add(username);
+                {
+                    var exist = clientSockets.FirstOrDefault(x => x == currentClientSocket);
+                    if(exist != null)
+                    {
+                        exist.name = username;
+
+                        _names.Add(username);
+                        byte[] success = Encoding.ASCII.GetBytes("Set username success.");
+                        currentClientSocket.socket.Send(success);
+                    }
+                }
+            }
+            else if (text.ToLower().Contains(Common.C_USER))
+            {
+                var names = text.Replace(Common.C_USER, "").Trim().Split(';');
+                var newusername = names[0];
+                var username = names[1];
+
+                //user exist close socket 
+                if (_names.Contains(newusername))
+                {
+                    byte[] data = Encoding.ASCII.GetBytes("Username you type has exist.\nDisconnected");
+                    byte[] kick = Encoding.ASCII.GetBytes(Common.C_KICK);
+                    currentClientSocket.socket.Send(data);
+                    currentClientSocket.socket.Send(kick);
+
+                    AddToChat("Client forcefully disconnected");
+
+                    // Don't shutdown because the socket may be disposed and its disconnected anyway.
+                    currentClientSocket.socket.Close();
+                    clientSockets.Remove(currentClientSocket);
+                    return;
+                }
+                else
+                {
+                    _names.Add(newusername);
+                    _names.Remove(username);
+                    byte[] success = Encoding.ASCII.GetBytes(Common.C_USER + " " + newusername);
+                    currentClientSocket.socket.Send(success);
+
+                    //normal message broadcast out to all clients
+                    SendToAll($"User [{username}] has change name to [{newusername}]", currentClientSocket);
+                }
+            }
+            else if (text.ToLower().Contains(Common.C_WHO))
+            {
+                var username = text.Substring(1, text.IndexOf(']') - 1);
+                // send client name
+                byte[] success = Encoding.ASCII.GetBytes($"Your name is {username}");
+                currentClientSocket.socket.Send(success);
+            }
+            else if (text.ToLower().Contains(Common.C_ABOUT))
+            {
+                var username = text.Substring(1, text.IndexOf(']') - 1);
+                // send client name
+                byte[] success = Encoding.ASCII.GetBytes($"Project develop by Khuat and Hai.\nTarget using for work and study.\nTime: {DateTime.Now}");
+                currentClientSocket.socket.Send(success);
+            }
+            else if (text.ToLower().Contains(Common.C_WHISPER))
+            {
+                var username = text.Substring(1, text.IndexOf(']') - 1);
+
+                //check new username empty
+                var newText = text.Substring(text.IndexOf(Common.C_WHISPER) + Common.C_WHISPER.Length).Trim();
+                var split = newText.Split(' ');
+                var target = split[0];
+                var message = split.Length < 2 ? "" : String.Join(" ", split.Skip(1));
+
+                if(!_names.Contains(target.ToLower().Trim()))
+                {
+                    byte[] success = Encoding.ASCII.GetBytes($"Username not exist.");
+                    currentClientSocket.socket.Send(success);
+                }
+                else
+                {
+                    var socket = clientSockets.FirstOrDefault(x => x.name == target);
+                    byte[] success = Encoding.ASCII.GetBytes($"[{socket.name}] " + message);
+                    socket.socket.Send(success);
+                }
             }
             else
             {
@@ -158,12 +238,55 @@ namespace Windows_Forms_Chat
 
         public void SendToAll(string str, ClientSocket from)
         {
-            foreach (ClientSocket c in clientSockets)
+            if(str.ToLower().Contains(Common.C_MOD + Common.SPACE))
             {
-                if (from == null || !from.socket.Equals(c))
+                var username = str.Replace(Common.C_MOD, "").Trim();
+                if(!_names.Contains(username))
                 {
-                    byte[] data = Encoding.ASCII.GetBytes(str);
-                    c.socket.Send(data);
+                    MessageBox.Show("Username not exist.");
+                    return;
+                }
+
+                var exist = clientSockets.FirstOrDefault(x => x.name == username);
+                exist.isMod = !exist.isMod;
+                if (exist.isMod) AddToChat($"Promote user {username} to mod.");
+                else AddToChat($"Demote user {username}.");
+            }
+            else if(str.ToLower() == Common.C_MODS)
+            {
+                var mods = clientSockets.Where(x => x.isMod);
+                AddToChat("Mods are " + (mods.Count() != 0 ? String.Join(" ", mods.Select(x => x.name)) : "empty."));
+            }
+            else if (str.ToLower().Contains(Common.C_KICK + Common.SPACE))
+            {
+                var username = str.Replace(Common.C_KICK, "").Trim();
+                if (!_names.Contains(username))
+                {
+                    MessageBox.Show("Username not exist.");
+                    return;
+                }
+
+                var exist = clientSockets.FirstOrDefault(x => x.name == username);
+                byte[] kick = Encoding.ASCII.GetBytes(Common.C_KICK);
+                exist.socket.Send(kick);
+
+                AddToChat("Client forcefully disconnected");
+
+                // Don't shutdown because the socket may be disposed and its disconnected anyway.
+                exist.socket.Close();
+                clientSockets.Remove(exist);
+                return;
+            }
+            else
+            {
+                var host = from == null ? "[host] " : "";
+                foreach (ClientSocket c in clientSockets)
+                {
+                    if (from == null || !from.socket.Equals(c))
+                    {
+                        byte[] data = Encoding.ASCII.GetBytes(host + str);
+                        c.socket.Send(data);
+                    }
                 }
             }
         }

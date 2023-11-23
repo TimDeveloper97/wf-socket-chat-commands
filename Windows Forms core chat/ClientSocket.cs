@@ -11,5 +11,7 @@ namespace Windows_Forms_Chat
         public Socket socket;
         public const int BUFFER_SIZE = 2048;
         public byte[] buffer = new byte[BUFFER_SIZE];
+        public string name;
+        public bool isMod = false;
     }
 }
