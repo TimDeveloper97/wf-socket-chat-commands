@@ -162,8 +162,7 @@ namespace Windows_Forms_Chat
                         exist.name = username;
 
                         _names.Add(username);
-                        byte[] success = Encoding.ASCII.GetBytes("Set username success.");
-                        currentClientSocket.socket.Send(success);
+                        SendToAll($"Username {username} has set success.", exist);
                     }
                 }
             }
