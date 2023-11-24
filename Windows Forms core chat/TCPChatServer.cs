@@ -231,7 +231,7 @@ namespace Windows_Forms_Chat
                 {
                     var socket = clientSockets.FirstOrDefault(x => x.name == target);
                     var tmp = "";
-                    if (socket == currentClientSocket)
+                    if (socket.name == currentClientSocket.name)
                         tmp = $"Private from [{currentClientSocket.name}] to [{socket.name}] " + message;
                     else
                         tmp = $"You can't send message to you.";
