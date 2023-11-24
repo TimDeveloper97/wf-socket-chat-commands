@@ -244,6 +244,44 @@ namespace Windows_Forms_Chat
                 byte[] buffer = Encoding.ASCII.GetBytes(message);
                 exist.socket.Send(buffer, 0, buffer.Length, SocketFlags.None);
             }
+            else if (text.ToLower().Contains(Common.C_KICK + Common.SPACE))
+            {
+                var newText = text.Substring(text.IndexOf(Common.C_KICK));
+                var username = newText.Replace(Common.C_KICK, "").Trim();
+
+                // user exist close socket 
+                if(!string.IsNullOrEmpty(currentClientSocket.name) 
+                    && username == currentClientSocket.name)
+                {
+                    byte[] success = Encoding.ASCII.GetBytes($"You can't kick you.");
+                    currentClientSocket.socket.Send(success);
+                }
+                else if (_names.Contains(username))
+                {
+                    var exist = clientSockets.FirstOrDefault(x => x.name == username);
+                    byte[] kick = Encoding.ASCII.GetBytes(Common.C_KICK);
+                    exist.socket.Send(kick);
+
+                    AddToChat("Client disconnected");
+
+                    // Don't shutdown because the socket may be disposed and its disconnected anyway.
+                    exist.socket.Close();
+                    clientSockets.Remove(exist);
+                    _names.Remove(username);
+                    foreach (var item in clientSockets)
+                    {
+                        byte[] data = Encoding.ASCII.GetBytes($"[{username}] remove from server.");
+                        item.socket.Send(data);
+                    }
+
+                    return;
+                }
+                else
+                {
+                    byte[] success = Encoding.ASCII.GetBytes($"Username {username} doesn't exist.");
+                    currentClientSocket.socket.Send(success);
+                }
+            }
             else
             {
                 //normal message broadcast out to all clients

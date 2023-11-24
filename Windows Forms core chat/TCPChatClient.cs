@@ -69,6 +69,12 @@ namespace Windows_Forms_Chat
 
         public void SendString(string text)
         {
+            if(!socket.Connected)
+            {
+                MessageBox.Show("You aren't connect.");
+                return;
+            }
+
             var existCommand = text.Trim()[0] == '!';
             if (existCommand)
             {
@@ -193,6 +199,7 @@ namespace Windows_Forms_Chat
             var newtext = text.Replace("[host]", "").Trim();
             if (text.ToLower() == Common.C_KICK)
             {
+                AddToChat("Disconnected.");
                 Close();
                 return;
             }
