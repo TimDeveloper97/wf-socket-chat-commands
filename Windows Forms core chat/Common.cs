@@ -10,7 +10,7 @@ namespace Windows_Forms_CORE_CHAT_UGH
     {
         public const string C_USERNAME = "!username";
         public const string C_USER = "!user";
-        public const string C_COMMANDS = "!commonds";
+        public const string C_COMMANDS = "!commands";
         public const string C_WHO = "!who";
         public const string C_ABOUT = "!about";
         public const string C_WHISPER = "!whisper";

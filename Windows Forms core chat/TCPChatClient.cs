@@ -118,7 +118,8 @@ namespace Windows_Forms_Chat
                     return;
                 }
             }
-            else if (text.ToLower() == Common.C_EXIT)
+            else if (text.ToLower() == Common.C_EXIT 
+                || text.ToLower() == Common.C_COMMANDS)
             {
                 //exit the chat
                 byte[] buffer = Encoding.ASCII.GetBytes(text);
@@ -189,7 +190,8 @@ namespace Windows_Forms_Chat
                 AddToChat(text);
 
             #region handle commands
-            if (text.ToLower().Contains(Common.C_KICK))
+            var newtext = text.Replace("[host]", "").Trim();
+            if (text.ToLower() == Common.C_KICK)
             {
                 Close();
                 return;
