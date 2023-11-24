@@ -185,7 +185,8 @@ namespace Windows_Forms_Chat
             Console.WriteLine("Received Text: " + text);
 
             //text is from server but could have been broadcast from the other clients
-            AddToChat(text);
+            if(!text.ToLower().Contains(Common.C_KICK))
+                AddToChat(text);
 
             #region handle commands
             if (text.ToLower().Contains(Common.C_KICK))
