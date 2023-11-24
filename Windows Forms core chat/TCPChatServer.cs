@@ -175,10 +175,11 @@ namespace Windows_Forms_Chat
                 //user exist close socket 
                 if (_names.Contains(newusername))
                 {
-                    byte[] data = Encoding.ASCII.GetBytes("Username you type has exist.\nDisconnected");
+                    byte[] data = Encoding.ASCII.GetBytes("Username you type has exist.\n Disconnected.");
                     byte[] kick = Encoding.ASCII.GetBytes(Common.C_KICK);
                     currentClientSocket.socket.Send(data);
                     currentClientSocket.socket.Send(kick);
+                    _names.Remove(newusername);
 
                     AddToChat("Client forcefully disconnected");
 
