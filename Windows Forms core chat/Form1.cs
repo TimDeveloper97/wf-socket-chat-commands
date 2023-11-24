@@ -91,7 +91,7 @@ namespace Windows_Forms_Chat
             if (client != null)
                 client.SendString(TypeTextBox.Text);
             else if (server != null)
-                server.SendToAll(TypeTextBox.Text, null);
+                server.HandleSendToAll(TypeTextBox.Text, null);
         }
 
         private void Form1_Load(object sender, EventArgs e)

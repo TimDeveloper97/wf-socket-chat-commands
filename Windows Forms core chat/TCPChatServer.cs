@@ -195,7 +195,7 @@ namespace Windows_Forms_Chat
                     currentClientSocket.socket.Send(success);
 
                     //normal message broadcast out to all clients
-                    SendToAll($"User [{username}] has change name to [{newusername}]", currentClientSocket);
+                    HandleSendToAll($"User [{username}] has change name to [{newusername}]", currentClientSocket);
                 }
             }
             else if (text.ToLower().Contains(Common.C_WHO))
@@ -246,7 +246,7 @@ namespace Windows_Forms_Chat
             else
             {
                 //normal message broadcast out to all clients
-                SendToAll(text, currentClientSocket);
+                HandleSendToAll(text, currentClientSocket);
             }
             #endregion
 
@@ -255,7 +255,7 @@ namespace Windows_Forms_Chat
                 currentClientSocket.socket.BeginReceive(currentClientSocket.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, currentClientSocket);
         }
 
-        public void SendToAll(string str, ClientSocket from)
+        public void HandleSendToAll(string str, ClientSocket from)
         {
             if (str.ToLower().Contains(Common.C_MOD + Common.SPACE))
             {
@@ -268,8 +268,14 @@ namespace Windows_Forms_Chat
 
                 var exist = clientSockets.FirstOrDefault(x => x.name == username);
                 exist.isMod = !exist.isMod;
-                if (exist.isMod) AddToChat($"Promote user {username} to mod.");
-                else AddToChat($"Demote user {username}.");
+                var message = "";
+                if (exist.isMod)
+                    message = $"Promote user {username} to mod.";
+                else
+                    message = $"Demote user {username}.";
+
+                AddToChat(message);
+                SendToAll(message, from);
             }
             else if (str.ToLower() == Common.C_MODS)
             {
@@ -304,17 +310,20 @@ namespace Windows_Forms_Chat
                 return;
             }
             else
+                SendToAll(str, from);
+        }
+
+        public void SendToAll(string str, ClientSocket from)
+        {
+            var host = from == null ? "[host] " : "";
+            foreach (ClientSocket c in clientSockets)
             {
-                var host = from == null ? "[host] " : "";
-                foreach (ClientSocket c in clientSockets)
+                var time = c.isTime ? $"[{DateTime.Now.ToString("dd/MM/yyyy HH:mm")}]" : "";
+                if (from == null || !from.socket.Equals(c))
                 {
-                    var time = c.isTime ? $"[{DateTime.Now.ToString("dd/MM/yyyy HH:mm")}]" : "";
-                    if (from == null || !from.socket.Equals(c))
-                    {
-                        byte[] data = Encoding.ASCII.GetBytes(time + host + str);
-                        if (c.socket.Connected)
-                            c.socket.Send(data);
-                    }
+                    byte[] data = Encoding.ASCII.GetBytes(time + host + str);
+                    if (c.socket.Connected)
+                        c.socket.Send(data);
                 }
             }
         }
