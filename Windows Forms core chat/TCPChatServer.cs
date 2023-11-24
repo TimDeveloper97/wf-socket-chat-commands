@@ -110,17 +110,21 @@ namespace Windows_Forms_Chat
                 AddToChat(text);
 
             #region handle commands
-            if (text.ToLower() == "!commands") // Client requested time
+            if (text.ToLower() == Common.C_COMMANDS) // Client requested time
             {
-                byte[] data = Encoding.ASCII.GetBytes("Commands are " + String.Join(" ", TCPChatClient._commands));
+                byte[] data = Encoding.ASCII.GetBytes("Commands are " + String.Join(" ", Common._commands));
                 currentClientSocket.socket.Send(data);
                 AddToChat("Commands sent to client");
             }
-            else if (text.ToLower() == "!exit") // Client wants to exit gracefully
+            else if (text.ToLower() == Common.C_EXIT) // Client wants to exit gracefully
             {
                 // Always Shutdown before closing
                 currentClientSocket.socket.Shutdown(SocketShutdown.Both);
                 currentClientSocket.socket.Close();
+
+                if(!string.IsNullOrEmpty(currentClientSocket.name))
+                    _names.Remove(currentClientSocket.name);
+
                 clientSockets.Remove(currentClientSocket);
                 AddToChat("Client disconnected");
                 return;
@@ -137,7 +141,7 @@ namespace Windows_Forms_Chat
                     currentClientSocket.socket.Send(data);
                     currentClientSocket.socket.Send(kick);
 
-                    AddToChat("Client forcefully disconnected");
+                    AddToChat("Client disconnected");
 
                     // Don't shutdown because the socket may be disposed and its disconnected anyway.
                     currentClientSocket.socket.Close();
@@ -290,7 +294,5 @@ namespace Windows_Forms_Chat
                 }
             }
         }
-
-
     }
 }

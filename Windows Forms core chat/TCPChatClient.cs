@@ -12,10 +12,6 @@ namespace Windows_Forms_Chat
     public class TCPChatClient : TCPChatBase
     {
         public string _name = null;
-        public static List<string> _commands
-            = new List<string> { Common.C_USERNAME, Common.C_ABOUT, Common.C_COMMANDS, Common.C_WHO,
-        Common.C_MOD, Common.C_KICK, Common.C_USER, Common.C_MODS, Common.C_WHISPER, Common.C_EXIT};
-        //public static TCPChatClient tcpChatClient;
         public Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         public ClientSocket clientSocket = new ClientSocket();
 
@@ -78,7 +74,7 @@ namespace Windows_Forms_Chat
             {
                 var split = text.Split(' ');
                 var nameCommand = split[0].Trim().ToLower();
-                if (!_commands.Contains(nameCommand))
+                if (!Common._commands.Contains(nameCommand))
                 {
                     MessageBox.Show("Command not correct.");
                     return;
@@ -121,6 +117,13 @@ namespace Windows_Forms_Chat
                     MessageBox.Show("Target username can't null or empty");
                     return;
                 }
+            }
+            else if (text.ToLower() == Common.C_EXIT)
+            {
+                //exit the chat
+                byte[] buffer = Encoding.ASCII.GetBytes(text);
+                socket.Send(buffer, 0, buffer.Length, SocketFlags.None);
+                return;
             }
 
             #endregion
