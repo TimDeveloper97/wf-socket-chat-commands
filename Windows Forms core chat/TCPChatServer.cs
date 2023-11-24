@@ -7,6 +7,8 @@ using System.Threading;
 using System.Windows.Forms;
 using Windows_Forms_CORE_CHAT_UGH;
 using System.Linq;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
+using System.Collections;
 
 //https://github.com/AbleOpus/NetworkingSamples/blob/master/MultiServer/Program.cs
 namespace Windows_Forms_Chat
@@ -232,6 +234,15 @@ namespace Windows_Forms_Chat
                     socket.socket.Send(success);
                 }
             }
+            else if (text.ToLower().Contains(Common.C_TIMESTAMPS))
+            {
+                //exit the chat
+                var exist = clientSockets.FirstOrDefault(x => x.socket == currentClientSocket.socket);
+                exist.isTime = !exist.isTime;
+                var message = exist.isTime ? "Enable time success." : "Disable time success.";
+                byte[] buffer = Encoding.ASCII.GetBytes(message);
+                exist.socket.Send(buffer, 0, buffer.Length, SocketFlags.None);
+            }
             else
             {
                 //normal message broadcast out to all clients
@@ -297,9 +308,10 @@ namespace Windows_Forms_Chat
                 var host = from == null ? "[host] " : "";
                 foreach (ClientSocket c in clientSockets)
                 {
+                    var time = c.isTime ? $"[{DateTime.Now.ToString("dd/MM/yyyy HH:mm")}]" : "";
                     if (from == null || !from.socket.Equals(c))
                     {
-                        byte[] data = Encoding.ASCII.GetBytes(host + str);
+                        byte[] data = Encoding.ASCII.GetBytes(time + host + str);
                         if (c.socket.Connected)
                             c.socket.Send(data);
                     }
