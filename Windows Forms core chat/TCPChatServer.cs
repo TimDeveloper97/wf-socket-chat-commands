@@ -198,9 +198,9 @@ namespace Windows_Forms_Chat
             }
             else if (text.ToLower().Contains(Common.C_WHO))
             {
-                var username = text.Substring(1, text.IndexOf(']') - 1);
+                //var username = text.Substring(1, text.IndexOf(']') - 1);
                 // send client name
-                byte[] success = Encoding.ASCII.GetBytes($"Your name is {username}");
+                byte[] success = Encoding.ASCII.GetBytes($"Users are {string.Join(" ", _names)}");
                 currentClientSocket.socket.Send(success);
             }
             else if (text.ToLower().Contains(Common.C_ABOUT))
