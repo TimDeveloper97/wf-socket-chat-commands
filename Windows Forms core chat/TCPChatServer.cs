@@ -231,7 +231,13 @@ namespace Windows_Forms_Chat
                 else
                 {
                     var socket = clientSockets.FirstOrDefault(x => x.name == target);
-                    byte[] success = Encoding.ASCII.GetBytes($"[{socket.name}] " + message);
+                    var tmp = "";
+                    if (socket == currentClientSocket)
+                        tmp = $"Private from [{currentClientSocket.name}] to [{socket.name}] " + message;
+                    else
+                        tmp = $"You can't send message to you.";
+
+                    byte[] success = Encoding.ASCII.GetBytes(tmp);
                     socket.socket.Send(success);
                 }
             }
