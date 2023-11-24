@@ -9,6 +9,7 @@ using Windows_Forms_CORE_CHAT_UGH;
 using System.Linq;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 using System.Collections;
+using static System.Net.Mime.MediaTypeNames;
 
 //https://github.com/AbleOpus/NetworkingSamples/blob/master/MultiServer/Program.cs
 namespace Windows_Forms_Chat
@@ -110,7 +111,7 @@ namespace Windows_Forms_Chat
             string text = Encoding.ASCII.GetString(recBuf);
 
             if (!text.ToLower().Contains(Common.C_USER + Common.SPACE))
-                AddToChat(text);
+                AddToChat(currentClientSocket.isMod ? "[mod]" + text : text);
 
             #region handle commands
             if (text.ToLower() == Common.C_COMMANDS) // Client requested time
@@ -315,7 +316,7 @@ namespace Windows_Forms_Chat
 
         public void SendToAll(string str, ClientSocket from)
         {
-            var host = from == null ? "[host] " : "";
+            var host = from == null ? "[host] " : from.isMod ? "[mod]" : "";
             foreach (ClientSocket c in clientSockets)
             {
                 var time = c.isTime ? $"[{DateTime.Now.ToString("dd/MM/yyyy HH:mm")}]" : "";
