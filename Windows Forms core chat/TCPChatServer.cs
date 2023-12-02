@@ -21,8 +21,10 @@ namespace Windows_Forms_Chat
         public List<string> _names = new List<string>();
         public Socket serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         private UserRepository _userRepository = new UserRepository();
+
         // create db
         public SQLiteConnection _connection;
+
         //connected clients
         public List<ClientSocket> clientSockets = new List<ClientSocket>();
 
@@ -279,7 +281,7 @@ namespace Windows_Forms_Chat
                 var username = newText.Replace(Common.C_KICK, "").Trim();
 
                 // user exist close socket 
-                if(!string.IsNullOrEmpty(currentClientSocket.name) 
+                if (!string.IsNullOrEmpty(currentClientSocket.name)
                     && username == currentClientSocket.name)
                 {
                     byte[] success = Encoding.ASCII.GetBytes($"You can't kick you.");
@@ -392,7 +394,6 @@ namespace Windows_Forms_Chat
                     byte[] data = Encoding.ASCII.GetBytes(time + host + str);
                     if (c.socket.Connected)
                         c.socket.Send(data);
-                    }
                 }
             }
         }

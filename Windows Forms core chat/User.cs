@@ -8,6 +8,14 @@ namespace Windows_Forms_CORE_CHAT_UGH
 {
     using System.Data.SQLite;
 
+    public enum State
+    {
+        Offline,
+        Login,
+        Chatting,
+        Playing,
+    }
+
     public class User
     {
         public int Id { get; set; }

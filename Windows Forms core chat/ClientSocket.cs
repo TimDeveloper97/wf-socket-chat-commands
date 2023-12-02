@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
+using Windows_Forms_CORE_CHAT_UGH;
 
 namespace Windows_Forms_Chat
 {
@@ -10,9 +11,25 @@ namespace Windows_Forms_Chat
         //add other attributes to this, e.g username, what state the client is in etc
         public Socket socket;
         public const int BUFFER_SIZE = 2048;
+        /// <summary>
+        /// buffer has data
+        /// </summary>
         public byte[] buffer = new byte[BUFFER_SIZE];
+        /// <summary>
+        /// name of client
+        /// </summary>
         public string name;
+        /// <summary>
+        /// role of client
+        /// </summary>
         public bool isMod = false;
+        /// <summary>
+        /// config of client
+        /// </summary>
         public bool isTime = false;
+        /// <summary>
+        /// state of client
+        /// </summary>
+        public State state = State.Offline;
     }
 }
