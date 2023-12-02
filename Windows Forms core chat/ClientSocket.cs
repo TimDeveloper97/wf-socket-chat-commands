@@ -13,5 +13,6 @@ namespace Windows_Forms_Chat
         public byte[] buffer = new byte[BUFFER_SIZE];
         public string name;
         public bool isMod = false;
+        public bool isTime = false;
     }
 }

@@ -7,6 +7,9 @@ using System.Threading;
 using System.Windows.Forms;
 using Windows_Forms_CORE_CHAT_UGH;
 using System.Linq;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
+using System.Collections;
+using static System.Net.Mime.MediaTypeNames;
 using System.Data.SQLite;
 using System.Data;
 
@@ -109,11 +112,12 @@ namespace Windows_Forms_Chat
         {
             ClientSocket currentClientSocket = (ClientSocket)AR.AsyncState;
 
-            int received;
+            int received = 0;
 
             try
             {
-                received = currentClientSocket.socket.EndReceive(AR);
+                if (currentClientSocket.socket.Connected)
+                    received = currentClientSocket.socket.EndReceive(AR);
             }
             catch (SocketException)
             {
@@ -130,20 +134,26 @@ namespace Windows_Forms_Chat
             string text = Encoding.ASCII.GetString(recBuf);
 
             if (!text.ToLower().Contains(Common.C_USER + Common.SPACE))
-                AddToChat(text);
+                AddToChat(currentClientSocket.isMod ? "[mod]" + text : text);
 
             #region handle commands
-            if (text.ToLower() == "!commands") // Client requested time
+            if (text.ToLower() == Common.C_COMMANDS) // Client requested time
             {
-                byte[] data = Encoding.ASCII.GetBytes("Commands are " + String.Join(" ", TCPChatClient._commands));
+                var commands = Common._commands;
+                commands.Remove(Common.C_KICK);
+                byte[] data = Encoding.ASCII.GetBytes("Commands are " + String.Join(" ", commands));
                 currentClientSocket.socket.Send(data);
                 AddToChat("Commands sent to client");
             }
-            else if (text.ToLower() == "!exit") // Client wants to exit gracefully
+            else if (text.ToLower() == Common.C_EXIT) // Client wants to exit gracefully
             {
                 // Always Shutdown before closing
                 currentClientSocket.socket.Shutdown(SocketShutdown.Both);
                 currentClientSocket.socket.Close();
+
+                if (!string.IsNullOrEmpty(currentClientSocket.name))
+                    _names.Remove(currentClientSocket.name);
+
                 clientSockets.Remove(currentClientSocket);
                 AddToChat("Client disconnected");
                 return;
@@ -160,7 +170,7 @@ namespace Windows_Forms_Chat
                     currentClientSocket.socket.Send(data);
                     currentClientSocket.socket.Send(kick);
 
-                    AddToChat("Client forcefully disconnected");
+                    AddToChat("Client disconnected");
 
                     // Don't shutdown because the socket may be disposed and its disconnected anyway.
                     currentClientSocket.socket.Close();
@@ -170,13 +180,12 @@ namespace Windows_Forms_Chat
                 else
                 {
                     var exist = clientSockets.FirstOrDefault(x => x == currentClientSocket);
-                    if(exist != null)
+                    if (exist != null)
                     {
                         exist.name = username;
 
                         _names.Add(username);
-                        byte[] success = Encoding.ASCII.GetBytes("Set username success.");
-                        currentClientSocket.socket.Send(success);
+                        SendToAll($"Username {username} has set success.", exist);
                     }
                 }
             }
@@ -189,10 +198,11 @@ namespace Windows_Forms_Chat
                 //user exist close socket 
                 if (_names.Contains(newusername))
                 {
-                    byte[] data = Encoding.ASCII.GetBytes("Username you type has exist.\nDisconnected");
+                    byte[] data = Encoding.ASCII.GetBytes("Username you type has exist.\n Disconnected.");
                     byte[] kick = Encoding.ASCII.GetBytes(Common.C_KICK);
                     currentClientSocket.socket.Send(data);
                     currentClientSocket.socket.Send(kick);
+                    _names.Remove(newusername);
 
                     AddToChat("Client forcefully disconnected");
 
@@ -209,14 +219,14 @@ namespace Windows_Forms_Chat
                     currentClientSocket.socket.Send(success);
 
                     //normal message broadcast out to all clients
-                    SendToAll($"User [{username}] has change name to [{newusername}]", currentClientSocket);
+                    HandleSendToAll($"User [{username}] has change name to [{newusername}]", currentClientSocket);
                 }
             }
             else if (text.ToLower().Contains(Common.C_WHO))
             {
-                var username = text.Substring(1, text.IndexOf(']') - 1);
+                //var username = text.Substring(1, text.IndexOf(']') - 1);
                 // send client name
-                byte[] success = Encoding.ASCII.GetBytes($"Your name is {username}");
+                byte[] success = Encoding.ASCII.GetBytes($"Users are {string.Join(" ", _names)}");
                 currentClientSocket.socket.Send(success);
             }
             else if (text.ToLower().Contains(Common.C_ABOUT))
@@ -236,7 +246,7 @@ namespace Windows_Forms_Chat
                 var target = split[0];
                 var message = split.Length < 2 ? "" : String.Join(" ", split.Skip(1));
 
-                if(!_names.Contains(target.ToLower().Trim()))
+                if (!_names.Contains(target.ToLower().Trim()))
                 {
                     byte[] success = Encoding.ASCII.GetBytes($"Username not exist.");
                     currentClientSocket.socket.Send(success);
@@ -244,27 +254,81 @@ namespace Windows_Forms_Chat
                 else
                 {
                     var socket = clientSockets.FirstOrDefault(x => x.name == target);
-                    byte[] success = Encoding.ASCII.GetBytes($"[{socket.name}] " + message);
+                    var tmp = "";
+                    if (socket.name != currentClientSocket.name)
+                        tmp = $"Private from [{currentClientSocket.name}] to [{socket.name}] " + message;
+                    else
+                        tmp = $"You can't send message to you.";
+
+                    byte[] success = Encoding.ASCII.GetBytes(tmp);
                     socket.socket.Send(success);
+                }
+            }
+            else if (text.ToLower().Contains(Common.C_TIMESTAMPS))
+            {
+                //exit the chat
+                var exist = clientSockets.FirstOrDefault(x => x.socket == currentClientSocket.socket);
+                exist.isTime = !exist.isTime;
+                var message = exist.isTime ? "Enable time success." : "Disable time success.";
+                byte[] buffer = Encoding.ASCII.GetBytes(message);
+                exist.socket.Send(buffer, 0, buffer.Length, SocketFlags.None);
+            }
+            else if (text.ToLower().Contains(Common.C_KICK + Common.SPACE))
+            {
+                var newText = text.Substring(text.IndexOf(Common.C_KICK));
+                var username = newText.Replace(Common.C_KICK, "").Trim();
+
+                // user exist close socket 
+                if(!string.IsNullOrEmpty(currentClientSocket.name) 
+                    && username == currentClientSocket.name)
+                {
+                    byte[] success = Encoding.ASCII.GetBytes($"You can't kick you.");
+                    currentClientSocket.socket.Send(success);
+                }
+                else if (_names.Contains(username))
+                {
+                    var exist = clientSockets.FirstOrDefault(x => x.name == username);
+                    byte[] kick = Encoding.ASCII.GetBytes(Common.C_KICK);
+                    exist.socket.Send(kick);
+
+                    AddToChat("Client disconnected");
+
+                    // Don't shutdown because the socket may be disposed and its disconnected anyway.
+                    exist.socket.Close();
+                    clientSockets.Remove(exist);
+                    _names.Remove(username);
+                    foreach (var item in clientSockets)
+                    {
+                        byte[] data = Encoding.ASCII.GetBytes($"[{username}] remove from server.");
+                        item.socket.Send(data);
+                    }
+
+                    return;
+                }
+                else
+                {
+                    byte[] success = Encoding.ASCII.GetBytes($"Username {username} doesn't exist.");
+                    currentClientSocket.socket.Send(success);
                 }
             }
             else
             {
                 //normal message broadcast out to all clients
-                SendToAll(text, currentClientSocket);
+                HandleSendToAll(text, currentClientSocket);
             }
             #endregion
 
             //we just received a message from this socket, better keep an ear out with another thread for the next one
-            currentClientSocket.socket.BeginReceive(currentClientSocket.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, currentClientSocket);
+            if (currentClientSocket.socket != null && currentClientSocket.socket.Connected)
+                currentClientSocket.socket.BeginReceive(currentClientSocket.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, currentClientSocket);
         }
 
-        public void SendToAll(string str, ClientSocket from)
+        public void HandleSendToAll(string str, ClientSocket from)
         {
-            if(str.ToLower().Contains(Common.C_MOD + Common.SPACE))
+            if (str.ToLower().Contains(Common.C_MOD + Common.SPACE))
             {
                 var username = str.Replace(Common.C_MOD, "").Trim();
-                if(!_names.Contains(username))
+                if (!_names.Contains(username))
                 {
                     MessageBox.Show("Username not exist.");
                     return;
@@ -272,10 +336,16 @@ namespace Windows_Forms_Chat
 
                 var exist = clientSockets.FirstOrDefault(x => x.name == username);
                 exist.isMod = !exist.isMod;
-                if (exist.isMod) AddToChat($"Promote user {username} to mod.");
-                else AddToChat($"Demote user {username}.");
+                var message = "";
+                if (exist.isMod)
+                    message = $"Promote user {username} to mod.";
+                else
+                    message = $"Demote user {username}.";
+
+                AddToChat(message);
+                SendToAll(message, from);
             }
-            else if(str.ToLower() == Common.C_MODS)
+            else if (str.ToLower() == Common.C_MODS)
             {
                 var mods = clientSockets.Where(x => x.isMod);
                 AddToChat("Mods are " + (mods.Count() != 0 ? String.Join(" ", mods.Select(x => x.name)) : "empty."));
@@ -289,6 +359,7 @@ namespace Windows_Forms_Chat
                     return;
                 }
 
+                _names.Remove(username);
                 var exist = clientSockets.FirstOrDefault(x => x.name == username);
                 byte[] kick = Encoding.ASCII.GetBytes(Common.C_KICK);
                 exist.socket.Send(kick);
@@ -298,16 +369,28 @@ namespace Windows_Forms_Chat
                 // Don't shutdown because the socket may be disposed and its disconnected anyway.
                 exist.socket.Close();
                 clientSockets.Remove(exist);
+
+                foreach (var item in clientSockets)
+                {
+                    byte[] data = Encoding.ASCII.GetBytes($"[{username}] remove from server.");
+                    item.socket.Send(data);
+                }
                 return;
             }
             else
+                SendToAll(str, from);
+        }
+
+        public void SendToAll(string str, ClientSocket from)
+        {
+            var host = from == null ? "[host] " : from.isMod ? "[mod]" : "";
+            foreach (ClientSocket c in clientSockets)
             {
-                var host = from == null ? "[host] " : "";
-                foreach (ClientSocket c in clientSockets)
+                var time = c.isTime ? $"[{DateTime.Now.ToString("dd/MM/yyyy HH:mm")}]" : "";
+                if (from == null || !from.socket.Equals(c))
                 {
-                    if (from == null || !from.socket.Equals(c))
-                    {
-                        byte[] data = Encoding.ASCII.GetBytes(host + str);
+                    byte[] data = Encoding.ASCII.GetBytes(time + host + str);
+                    if (c.socket.Connected)
                         c.socket.Send(data);
                     }
                 }
