@@ -19,9 +19,10 @@ namespace Windows_Forms_CORE_CHAT_UGH
         public const string C_KICK   = "!kick";
         public const string C_EXIT   = "!exit";
         public const string C_TIMESTAMPS   = "!timestamps";
+        public const string C_SCORES   = "!scores";
         public const string SPACE   = " ";
         public static List<string> _commands
-            = new List<string> { Common.C_USERNAME, Common.C_ABOUT, Common.C_COMMANDS, Common.C_WHO,
-        Common.C_MOD, Common.C_KICK, Common.C_USER, Common.C_MODS, Common.C_WHISPER, Common.C_EXIT, C_TIMESTAMPS};
+            = new List<string> { C_USERNAME, C_ABOUT, C_COMMANDS, C_WHO,
+        C_MOD, C_KICK, C_USER, C_MODS, C_WHISPER, C_EXIT, C_TIMESTAMPS, C_SCORES};
     }
 }
