@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Data.SQLite;
 using System.Drawing;
 using System.Linq;
 using System.Net;
@@ -20,11 +21,11 @@ namespace Windows_Forms_Chat
         TicTacToe ticTacToe = new TicTacToe();
         TCPChatServer server = null;
         TCPChatClient client = null;
+        
 
         public Form1()
         {
             InitializeComponent();
-
         }
         
         public bool CanHostOrJoin()
@@ -48,8 +49,7 @@ namespace Windows_Forms_Chat
                         throw new Exception("Incorrect port value!");//thrown exceptions should exit the try and land in next catch
 
                     server.SetupServer();
-
-
+                    server.SetupDb();
                 }
                 catch (Exception ex)
                 {
@@ -184,6 +184,11 @@ namespace Windows_Forms_Chat
         private void button9_Click(object sender, EventArgs e)
         {
             AttemptMove(8);
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            server.CloseDb();
         }
     }
 }

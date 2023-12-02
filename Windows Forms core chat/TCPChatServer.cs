@@ -7,6 +7,8 @@ using System.Threading;
 using System.Windows.Forms;
 using Windows_Forms_CORE_CHAT_UGH;
 using System.Linq;
+using System.Data.SQLite;
+using System.Data;
 
 //https://github.com/AbleOpus/NetworkingSamples/blob/master/MultiServer/Program.cs
 namespace Windows_Forms_Chat
@@ -15,6 +17,9 @@ namespace Windows_Forms_Chat
     {
         public List<string> _names = new List<string>();
         public Socket serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        private UserRepository _userRepository = new UserRepository();
+        // create db
+        public SQLiteConnection _connection;
         //connected clients
         public List<ClientSocket> clientSockets = new List<ClientSocket>();
 
@@ -32,6 +37,24 @@ namespace Windows_Forms_Chat
 
             //return empty if user not enter useful details
             return tcp;
+        }
+
+        public void SetupDb()
+        {
+            string databasePath = "chat.db";
+
+            // Connection string for SQLite
+            string connectionString = $"Data Source={databasePath};Version=3;";
+
+            _connection = new SQLiteConnection(connectionString);
+            _connection.Open();
+
+            // Create a table (if not exists)
+            using (SQLiteCommand createTableCmd =
+                new SQLiteCommand("CREATE TABLE IF NOT EXISTS User (Id INTEGER PRIMARY KEY AUTOINCREMENT, Username TEXT, Password TEXT, Win INTEGER, Draw INTEGER, Lose INTEGER);", _connection))
+            {
+                createTableCmd.ExecuteNonQuery();
+            }
         }
 
         public void SetupServer()
@@ -291,6 +314,13 @@ namespace Windows_Forms_Chat
             }
         }
 
-
+        public void CloseDb()
+        {
+            // Close the database connection when the form is closing
+            if (_connection.State == ConnectionState.Open)
+            {
+                _connection.Close();
+            }
+        }
     }
 }
