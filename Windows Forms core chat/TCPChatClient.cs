@@ -129,6 +129,28 @@ namespace Windows_Forms_Chat
                 socket.Send(buffer, 0, buffer.Length, SocketFlags.None);
                 return;
             }
+            else if (text.ToLower().Contains(Common.C_LOGIN + Common.SPACE))
+            {
+                if (!string.IsNullOrEmpty(_name))
+                {
+                    MessageBox.Show("You are logged in.");
+                    return;
+                }
+
+                //check new login info: username and password empty
+                var info = text.Replace(Common.C_LOGIN, "").Trim();
+                var split = info.Split(' ');
+                if (split.Length != 2)
+                {
+                    MessageBox.Show("!login command must have username password");
+                    return;
+                }
+
+                //exit the chat
+                byte[] buffer = Encoding.ASCII.GetBytes(text);
+                socket.Send(buffer, 0, buffer.Length, SocketFlags.None);
+                return;
+            }
 
             #endregion
 
@@ -189,12 +211,15 @@ namespace Windows_Forms_Chat
             Console.WriteLine("Received Text: " + text);
 
             //text is from server but could have been broadcast from the other clients
-            if(!text.ToLower().Contains(Common.C_KICK))
+            if(!text.ToLower().Contains(Common.C_KICK)
+                && !text.ToLower().Contains(Common.C_LOGIN)
+                && !(text.ToLower() == Common.C_EXIT))
                 AddToChat(text);
 
             #region handle commands
             var newtext = text.Replace("[host]", "").Trim();
-            if (text.ToLower() == Common.C_KICK)
+            if (text.ToLower() == Common.C_KICK
+                || text.ToLower() == Common.C_EXIT)
             {
                 AddToChat("Disconnected.");
                 Close();
@@ -206,7 +231,12 @@ namespace Windows_Forms_Chat
                 //update new username empty
                 _name = text.Replace(Common.C_USER, "").Trim();
             }
-
+            else if (text.ToLower().Contains(Common.C_LOGIN + Common.SPACE))
+            {
+                //get username
+                _name = text.Replace(Common.C_LOGIN, "").Trim();
+                AddToChat("Login success.");
+            }
             #endregion
 
             //we just received a message from this socket, better keep an ear out with another thread for the next one

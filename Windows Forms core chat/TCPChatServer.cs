@@ -164,6 +164,7 @@ namespace Windows_Forms_Chat
             }
             else if (text.ToLower() == Common.C_EXIT) // Client wants to exit gracefully
             {
+                currentClientSocket.socket.Send(Encoding.ASCII.GetBytes(Common.C_EXIT));
                 // Always Shutdown before closing
                 currentClientSocket.socket.Shutdown(SocketShutdown.Both);
                 currentClientSocket.socket.Close();
@@ -204,6 +205,13 @@ namespace Windows_Forms_Chat
                         _names.Add(username);
                         SendToAll($"Username {username} has set success.", exist);
                     }
+
+                    // insert to db
+                    _userRepository.Insert(_connection, new User
+                    {
+                        Username = username,
+                        Password = Common.DEFAULT_PASSWORD,
+                    });
                 }
             }
             else if (text.ToLower().Contains(Common.C_USER))
@@ -335,6 +343,37 @@ namespace Windows_Forms_Chat
                             $"Username {username} doesn't exist."
                           + (char)13 + "\n-------------------------------------------");
                     currentClientSocket.socket.Send(success);
+                }
+            }
+            else if (text.ToLower().Contains(Common.C_LOGIN + Common.SPACE))
+            {
+                var info = text.Replace(Common.C_LOGIN, "").Trim();
+                var split = info.Split(' ');
+
+                if(split.Length == 2)
+                {
+                    var username = split[0];
+                    var password = split[1];
+
+                    var users = _userRepository.GetAll(_connection);
+                    var exist = users.Any(x => x.Username == username && x.Password == password);
+
+                    string message;
+                    if (exist)
+                    {
+                        message = $"{Common.C_LOGIN} {username}";
+                        foreach (var item in clientSockets)
+                        {
+                            if(item.name != currentClientSocket.name)
+                                currentClientSocket.socket
+                                    .Send(Encoding.ASCII.GetBytes($"Username {currentClientSocket.name} has login."));
+                        }
+                    }
+                    else
+                        message = "Username or password doesn't exist.";
+
+                    byte[] data = Encoding.ASCII.GetBytes(message);
+                    currentClientSocket.socket.Send(data);
                 }
             }
             else
