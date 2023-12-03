@@ -124,7 +124,8 @@ namespace Windows_Forms_Chat
             else if (text.ToLower() == Common.C_EXIT 
                 || text.ToLower() == Common.C_COMMANDS
                 || text.ToLower() == Common.C_STATUS
-                || text.ToLower() == Common.C_SHOWPASSWORD)
+                || text.ToLower() == Common.C_SHOWPASSWORD
+                || text.ToLower() == Common.C_JOIN)
             {
                 //exit the chat
                 byte[] buffer = Encoding.ASCII.GetBytes(text);

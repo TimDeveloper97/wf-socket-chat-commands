@@ -31,5 +31,9 @@ namespace Windows_Forms_Chat
         /// state of client
         /// </summary>
         public State state = State.Offline;
+        /// <summary>
+        /// name of player: !player1 or !player2
+        /// </summary>
+        public string name_player = null;
     }
 }

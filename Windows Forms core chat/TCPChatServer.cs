@@ -21,7 +21,8 @@ namespace Windows_Forms_Chat
         public List<string> _names = new List<string>();
         public Socket serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         private UserRepository _userRepository = new UserRepository();
-
+        private bool _isPlayer1 = false, _isPlayer2 = false;
+        private string[,] _map = new string[3,3];
         // create db
         public SQLiteConnection _connection;
 
@@ -63,6 +64,9 @@ namespace Windows_Forms_Chat
 
             // get list usersname
             _names = _userRepository.GetAll(_connection).Select(x => x.Username).ToList();
+
+            // clear data
+            ClearMap();
         }
 
         public void SetupServer()
@@ -175,6 +179,16 @@ namespace Windows_Forms_Chat
                 currentClientSocket.socket.Shutdown(SocketShutdown.Both);
                 currentClientSocket.socket.Close();
 
+                // out game
+                if (currentClientSocket.name_player != null)
+                {
+                    if (currentClientSocket.name_player == Common.C_PLAYER1)
+                        _isPlayer1 = false;
+                    else if (currentClientSocket.name_player == Common.C_PLAYER2)
+                        _isPlayer2 = false;
+                }
+
+                // remove names
                 if (!string.IsNullOrEmpty(currentClientSocket.name))
                     _names.Remove(currentClientSocket.name);
 
@@ -412,6 +426,32 @@ namespace Windows_Forms_Chat
 
                 currentClientSocket.socket.Send(Encoding.ASCII.GetBytes("Update password success."));
             }
+            else if (text.ToLower() == Common.C_JOIN)
+            {
+                string message;
+                if (!_isPlayer1)
+                {
+                    currentClientSocket.name_player = Common.C_PLAYER1;
+                    currentClientSocket.state = State.Playing;
+
+                    message = $"You are {Common.C_PLAYER1}";
+                    _isPlayer1 = true;
+
+                }
+                else if(!_isPlayer2)
+                {
+                    currentClientSocket.name_player = Common.C_PLAYER2;
+                    currentClientSocket.state = State.Playing;
+
+                    message = $"You are {Common.C_PLAYER2}";
+                    _isPlayer2 = true;
+                }
+                else if(currentClientSocket.name_player != null)
+                    message = $"You are {currentClientSocket.name_player}";
+                else 
+                    message = $"TicTacToe game current out of slot.";
+                currentClientSocket.socket.Send(Encoding.ASCII.GetBytes(message));
+            }
             else
             {
                 //normal message broadcast out to all clients
@@ -505,6 +545,17 @@ namespace Windows_Forms_Chat
             if (_connection.State == ConnectionState.Open)
             {
                 _connection.Close();
+            }
+        }
+
+        public void ClearMap()
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    _map[i, j] = "";
+                }
             }
         }
     }

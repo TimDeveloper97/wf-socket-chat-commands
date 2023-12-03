@@ -23,11 +23,15 @@ namespace Windows_Forms_CORE_CHAT_UGH
         public const string C_PASSWORD   = "!password";
         public const string C_SHOWPASSWORD   = "!showpassword";
         public const string C_STATUS   = "!status";
+        public const string C_JOIN   = "!join";
         public const string C_LOGIN   = "!login";
+        public const string C_PLAYER1   = "!player1";
+        public const string C_PLAYER2   = "!player2";
         public const string SPACE   = " ";
         public const string DEFAULT_PASSWORD   = "1234";
         public static List<string> _commands
             = new List<string> { C_USERNAME, C_ABOUT, C_COMMANDS, C_WHO,
-        C_MOD, C_KICK, C_USER, C_MODS, C_WHISPER, C_EXIT, C_TIMESTAMPS, C_SCORES, C_PASSWORD, C_SHOWPASSWORD, C_LOGIN, C_STATUS};
+                C_MOD, C_KICK, C_USER, C_MODS, C_WHISPER, C_EXIT, C_TIMESTAMPS, C_SCORES, C_PASSWORD,
+                C_SHOWPASSWORD, C_LOGIN, C_STATUS, C_JOIN};
     }
 }
