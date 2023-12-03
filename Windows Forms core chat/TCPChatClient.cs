@@ -153,7 +153,23 @@ namespace Windows_Forms_Chat
                 socket.Send(buffer, 0, buffer.Length, SocketFlags.None);
                 return;
             }
-
+            else if (!string.IsNullOrEmpty(_name)
+                && text.ToLower().Contains(Common.C_PASSWORD + Common.SPACE))
+            {
+                //check new username empty
+                var newusername = text.Replace(Common.C_PASSWORD, "").Trim();
+                if (string.IsNullOrEmpty(newusername))
+                {
+                    MessageBox.Show("New password can't null or empty");
+                    return;
+                }
+                else
+                {
+                    byte[] buffer = Encoding.ASCII.GetBytes(text);
+                    socket.Send(buffer, 0, buffer.Length, SocketFlags.None);
+                    return;
+                }
+            }
             #endregion
 
             //checked username exist

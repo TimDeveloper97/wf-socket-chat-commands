@@ -60,6 +60,9 @@ namespace Windows_Forms_Chat
             {
                 createTableCmd.ExecuteNonQuery();
             }
+
+            // get list usersname
+            _names = _userRepository.GetAll(_connection).Select(x => x.Username).ToList();
         }
 
         public void SetupServer()
@@ -354,7 +357,7 @@ namespace Windows_Forms_Chat
                 var info = text.Replace(Common.C_LOGIN, "").Trim();
                 var split = info.Split(' ');
 
-                if(split.Length == 2)
+                if (split.Length == 2)
                 {
                     var username = split[0];
                     var password = split[1];
@@ -368,7 +371,7 @@ namespace Windows_Forms_Chat
                         message = $"{Common.C_LOGIN} {username}";
                         foreach (var item in clientSockets)
                         {
-                            if(item.name != currentClientSocket.name)
+                            if (item.name != currentClientSocket.name)
                                 currentClientSocket.socket
                                     .Send(Encoding.ASCII.GetBytes($"Username {currentClientSocket.name} has login."));
                         }
@@ -380,9 +383,12 @@ namespace Windows_Forms_Chat
                     currentClientSocket.socket.Send(data);
 
                     // update state
-                    var existClient = clientSockets.FirstOrDefault(x => x.name == currentClientSocket.name);
+                    var existClient = clientSockets.FirstOrDefault(x => x == currentClientSocket);
                     if (existClient != null)
+                    {
                         existClient.state = State.Chatting;
+                        existClient.name = username;
+                    }
                 }
             }
             else if (text.ToLower() == Common.C_STATUS)
@@ -392,7 +398,19 @@ namespace Windows_Forms_Chat
             else if (text.ToLower() == Common.C_SHOWPASSWORD)
             {
                 var exist = _userRepository.GetAll(_connection).FirstOrDefault(x => x.Username == currentClientSocket.name);
-                currentClientSocket.socket.Send(Encoding.ASCII.GetBytes($"Your password is {exist.Password}"));
+                string message;
+                if (exist != null)
+                    message = $"Your password is {exist.Password}";
+                else
+                    message = $"You are not login or register.";
+                currentClientSocket.socket.Send(Encoding.ASCII.GetBytes(message));
+            }
+            else if (text.ToLower().Contains(Common.C_PASSWORD))
+            {
+                var newpassword = text.Replace(Common.C_PASSWORD, "").Trim();
+                _userRepository.Update(_connection, currentClientSocket.name, $"Password = '{newpassword}'");
+
+                currentClientSocket.socket.Send(Encoding.ASCII.GetBytes("Update password success."));
             }
             else
             {

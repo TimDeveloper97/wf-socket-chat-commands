@@ -70,10 +70,10 @@ namespace Windows_Forms_CORE_CHAT_UGH
             }
         }
 
-        public void Update(SQLiteConnection connection, int id, string where)
+        public void Update(SQLiteConnection connection, string name, string set)
         {
             using (SQLiteCommand updateCmd = 
-                new SQLiteCommand($"UPDATE User SET Id = {id} WHERE {where};", connection))
+                new SQLiteCommand($"UPDATE User SET {set} WHERE Username = '{name}';", connection))
             {
                 updateCmd.ExecuteNonQuery();
             }
