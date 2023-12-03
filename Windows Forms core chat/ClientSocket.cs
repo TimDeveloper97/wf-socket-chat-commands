@@ -35,5 +35,11 @@ namespace Windows_Forms_Chat
         /// name of player: !player1 or !player2
         /// </summary>
         public string name_player = null;
+        /// <summary>
+        /// point
+        /// </summary>
+        public int win = 0;
+        public int draw = 0;
+        public int lose = 0;
     }
 }

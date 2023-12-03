@@ -9,6 +9,7 @@ namespace Windows_Forms_Chat
     public class TCPChatBase
     {
         public TextBox chatTextBox;
+        public TicTacToe ticTacToe;
         public int port;
         public void SetChat(string str)
         {
@@ -25,6 +26,13 @@ namespace Windows_Forms_Chat
             {
                 chatTextBox.AppendText(str);
                 chatTextBox.AppendText(Environment.NewLine);
+            });
+        }
+        public void Action(Action<TicTacToe> action)
+        {
+            chatTextBox.Invoke((Action)delegate
+            {
+                action.Invoke(ticTacToe);
             });
         }
     }

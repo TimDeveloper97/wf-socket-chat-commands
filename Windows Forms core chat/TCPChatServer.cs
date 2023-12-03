@@ -22,14 +22,13 @@ namespace Windows_Forms_Chat
         public Socket serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         private UserRepository _userRepository = new UserRepository();
         private bool _isPlayer1 = false, _isPlayer2 = false;
-        private string[,] _map = new string[3,3];
         // create db
         public SQLiteConnection _connection;
 
         //connected clients
         public List<ClientSocket> clientSockets = new List<ClientSocket>();
 
-        public static TCPChatServer createInstance(int port, TextBox chatTextBox)
+        public static TCPChatServer createInstance(int port, TextBox chatTextBox, TicTacToe ticTacToe)
         {
             TCPChatServer tcp = null;
 
@@ -39,6 +38,7 @@ namespace Windows_Forms_Chat
                 tcp = new TCPChatServer();
                 tcp.port = port;
                 tcp.chatTextBox = chatTextBox;
+                tcp.ticTacToe = ticTacToe;
             }
 
             //return empty if user not enter useful details
@@ -64,9 +64,6 @@ namespace Windows_Forms_Chat
 
             // get list usersname
             _names = _userRepository.GetAll(_connection).Select(x => x.Username).ToList();
-
-            // clear data
-            ClearMap();
         }
 
         public void SetupServer()
@@ -377,10 +374,13 @@ namespace Windows_Forms_Chat
                     var password = split[1];
 
                     var users = _userRepository.GetAll(_connection);
-                    var exist = users.Any(x => x.Username == username && x.Password == password);
+                    var exist = users.FirstOrDefault(x => x.Username == username && x.Password == password);
+                    var existLogin = clientSockets.FirstOrDefault(x => x.name == username);
 
                     string message;
-                    if (exist)
+                    if(existLogin != null)
+                        message = "Account has login in another machine.";
+                    else if (exist != null)
                     {
                         message = $"{Common.C_LOGIN} {username}";
                         foreach (var item in clientSockets)
@@ -402,6 +402,13 @@ namespace Windows_Forms_Chat
                     {
                         existClient.state = State.Chatting;
                         existClient.name = username;
+
+                        if(exist != null)
+                        {
+                            existClient.win = exist.Win;
+                            existClient.draw = exist.Draw;
+                            existClient.lose = exist.Lose;
+                        }
                     }
                 }
             }
@@ -436,7 +443,6 @@ namespace Windows_Forms_Chat
 
                     message = $"You are {Common.C_PLAYER1}";
                     _isPlayer1 = true;
-
                 }
                 else if(!_isPlayer2)
                 {
@@ -448,8 +454,71 @@ namespace Windows_Forms_Chat
                 }
                 else if(currentClientSocket.name_player != null)
                     message = $"You are {currentClientSocket.name_player}";
-                else 
+                else
                     message = $"TicTacToe game current out of slot.";
+
+                currentClientSocket.socket.Send(Encoding.ASCII.GetBytes(message));
+
+                if(_isPlayer1 && _isPlayer2)
+                {
+                    foreach (var client in clientSockets)
+                    {
+                        if(client.name_player != null)
+                            client.socket.Send(Encoding.ASCII.GetBytes($"{Common.C_START} {client.name_player}"));
+                    }
+
+                    Thread.Sleep(10);
+                    SendToAll("The number of people is enough. The game begins.", null);
+
+                    //reset board server
+                    Action(x => x.ResetBoard());
+                }
+            }
+            else if (text.ToLower().Contains(Common.C_POINT))
+            {
+                var point = text.Replace(Common.C_POINT, "").Trim();
+                if (!int.TryParse(point, out var newPoint)
+                    || newPoint > 8 || newPoint < 0)
+                {
+                    MessageBox.Show("Point must be number range [0-8]");
+                    return;
+                }
+
+                var cursor = currentClientSocket.name_player == Common.C_PLAYER1 ? 'x' : 'o';
+                var result = "";
+
+                Action(x =>
+                {
+                    x.SetTile(newPoint, TicTacToe.StringToGridTileType(cursor));
+                    result = x.GridToString();
+                });
+
+                foreach (var client in clientSockets)
+                {
+                    if (client.name_player != null)
+                        client.socket.Send(Encoding.ASCII.GetBytes($"{Common.C_POINT} {result};{currentClientSocket.name_player}"));
+                }
+
+                Thread.Sleep(10);
+                var next = clientSockets.FirstOrDefault(x => x.name_player != null && x.name_player != currentClientSocket.name_player);
+                SendToAll($"It's {next.name} turn.", null);
+            }
+            else if (text.ToLower().Contains(Common.C_ENDGAME))
+            {
+                var gs = text.Replace(Common.C_ENDGAME, "").Trim();
+                UpdatePoint((GameState)int.Parse(gs));
+            }
+            else if (text.ToLower() == Common.C_SCORES)
+            {
+                string message = "";
+                var users = _userRepository.GetAll(_connection).OrderByDescending(x => x.Win);
+                message = $"Scores are "
+                        + (char)13 + "\n[User] [Win] [Draw] [Lose]";
+                foreach (var user in users)
+                {
+                    message += (char)13 + $"\n{user.Username}    {user.Win}    {user.Draw}     {user.Lose}";
+                }
+
                 currentClientSocket.socket.Send(Encoding.ASCII.GetBytes(message));
             }
             else
@@ -548,15 +617,52 @@ namespace Windows_Forms_Chat
             }
         }
 
-        public void ClearMap()
+        public void UpdatePoint(GameState x_o)
         {
-            for (int i = 0; i < 3; i++)
+            var player1 = clientSockets.FirstOrDefault(x => x.name_player == Common.C_PLAYER1);
+            var player2 = clientSockets.FirstOrDefault(x => x.name_player == Common.C_PLAYER2);
+            string message = "";
+
+            // player 1
+            if (x_o == GameState.crossWins)
             {
-                for (int j = 0; j < 3; j++)
-                {
-                    _map[i, j] = "";
-                }
+                _userRepository.Update(_connection, player1.name, $"Win = '{++player1.win}'");
+                _userRepository.Update(_connection, player2.name, $"Lose = '{++player2.lose}'");
+
+                message = $"{Common.C_ENDGAME} {player1.name}";
             }
+            // player 2
+            else if (x_o == GameState.naughtWins)
+            {
+                _userRepository.Update(_connection, player2.name, $"Win = '{++player2.win}'");
+                _userRepository.Update(_connection, player1.name, $"Lose = '{++player1.lose}'");
+
+                message = $"{Common.C_ENDGAME} {player2.name}";
+            }
+            // draw
+            else if (x_o == GameState.draw)
+            {
+                _userRepository.Update(_connection, player2.name, $"Draw = '{++player2.draw}'");
+                _userRepository.Update(_connection, player1.name, $"Draw = '{++player1.draw}'");
+
+                message = $"{Common.C_ENDGAME}";
+            }
+
+            player1.socket.Send(Encoding.ASCII.GetBytes(message));
+            player2.socket.Send(Encoding.ASCII.GetBytes(message));
+
+            // clear player
+            foreach (var client in clientSockets)
+            {
+                if(client.name_player != null)
+                {
+                    client.state = State.Chatting;
+                    client.name_player = null;
+                }    
+            }
+            _isPlayer1 = false; _isPlayer2 = false;
+
+            SendToAll("The match has ended everyone can join the match.", null);
         }
     }
 }

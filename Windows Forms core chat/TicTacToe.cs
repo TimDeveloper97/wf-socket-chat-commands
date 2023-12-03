@@ -28,16 +28,27 @@ namespace Windows_Forms_Chat
             string s = "";
             //TODO convert values on board to a string e.g "xox___x_o"
 
+            for (int i = 0; i < grid.Length; i++)
+            {
+                s += GridTileTypeToString(grid[i]);
+            }
+
             return s;
         }
         public void StringToGrid(string s)
         {
             //TODO take string s e.g "xox___x_o" and use its values to update grid and the buttons
+
+            for (int i = 0; i < s.Length; i++)
+            {
+                grid[i] = StringToGridTileType(s[i]);
+                buttons[i].Text = TileTypeToString(grid[i]);
+            }
         }
 
         public bool SetTile(int index, TileType tileType)
         {
-            if(grid[index] == TileType.blank)
+            if (grid[index] == TileType.blank)
             {
                 grid[index] = tileType;
                 if (buttons.Count >= 9)
@@ -94,7 +105,7 @@ namespace Windows_Forms_Chat
 
         public bool CheckForDraw()
         {
-            for(int i = 0; i < 9; i++)
+            for (int i = 0; i < 9; i++)
             {
                 if (grid[i] == TileType.blank)
                     return false;
@@ -121,6 +132,26 @@ namespace Windows_Forms_Chat
                 return "X";
             else
                 return "O";
+        }
+
+        public static string GridTileTypeToString(TileType t)
+        {
+            if (t == TileType.blank)
+                return "_";
+            else if (t == TileType.cross)
+                return "x";
+            else
+                return "o";
+        }
+
+        public static TileType StringToGridTileType(char s)
+        {
+            if (s == '_')
+                return TileType.blank;
+            else if (s == 'x')
+                return TileType.cross;
+            else
+                return TileType.naught;
         }
     }
 }

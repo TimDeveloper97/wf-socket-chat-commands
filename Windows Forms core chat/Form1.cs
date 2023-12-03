@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Windows_Forms_CORE_CHAT_UGH;
 
 
 //https://www.youtube.com/watch?v=xgLRe7QV6QI&ab_channel=HazardEditHazardEdit
@@ -21,13 +22,12 @@ namespace Windows_Forms_Chat
         TicTacToe ticTacToe = new TicTacToe();
         TCPChatServer server = null;
         TCPChatClient client = null;
-        
 
         public Form1()
         {
-            InitializeComponent();
+            InitializeComponent(); 
         }
-        
+
         public bool CanHostOrJoin()
         {
             if (server == null && (client == null || client?.IsClose() == false))
@@ -43,7 +43,7 @@ namespace Windows_Forms_Chat
                 try
                 {
                     int port = int.Parse(MyPortTextBox.Text);
-                    server = TCPChatServer.createInstance(port, ChatTextBox);
+                    server = TCPChatServer.createInstance(port, ChatTextBox, ticTacToe);
                     //oh no, errors
                     if (server == null)
                         throw new Exception("Incorrect port value!");//thrown exceptions should exit the try and land in next catch
@@ -53,7 +53,7 @@ namespace Windows_Forms_Chat
                 }
                 catch (Exception ex)
                 {
-                    ChatTextBox.Text += "Error: " + ex ;
+                    ChatTextBox.Text += "Error: " + ex;
                     ChatTextBox.AppendText(Environment.NewLine);
                 }
             }
@@ -68,7 +68,7 @@ namespace Windows_Forms_Chat
                 {
                     int port = int.Parse(MyPortTextBox.Text);
                     int serverPort = int.Parse(serverPortTextBox.Text);
-                    client = TCPChatClient.CreateInstance(port, serverPort, ServerIPTextBox.Text, ChatTextBox);
+                    client = TCPChatClient.CreateInstance(port, serverPort, ServerIPTextBox.Text, ChatTextBox, ticTacToe);
 
                     if (client == null)
                         throw new Exception("Incorrect port value!");//thrown exceptions should exit the try and land in next catch
@@ -82,7 +82,7 @@ namespace Windows_Forms_Chat
                     ChatTextBox.Text += "Error: " + ex;
                     ChatTextBox.AppendText(Environment.NewLine);
                 }
-            
+
             }
         }
 
@@ -110,13 +110,20 @@ namespace Windows_Forms_Chat
 
         private void AttemptMove(int i)
         {
+            if (server != null)
+            {
+                MessageBox.Show("You can't play game. You are Server.");
+                return;
+            }
+
             if (ticTacToe.myTurn)
             {
                 bool validMove = ticTacToe.SetTile(i, ticTacToe.playerTileType);
                 if (validMove)
                 {
                     //tell server about it
-                    //ticTacToe.myTurn = false;//call this too when ready with server
+                    ticTacToe.myTurn = false; //call this too when ready with server
+                    client.SendString($"{Common.C_POINT} {i}");
                 }
                 //example, do something similar from server
                 GameState gs = ticTacToe.GetGameState();
@@ -125,18 +132,27 @@ namespace Windows_Forms_Chat
                     ChatTextBox.AppendText("X wins!");
                     ChatTextBox.AppendText(Environment.NewLine);
                     ticTacToe.ResetBoard();
+
+                    // call update 
+                    client.UpdatePoint(gs);
                 }
                 if (gs == GameState.naughtWins)
                 {
-                    ChatTextBox.AppendText(") wins!");
+                    ChatTextBox.AppendText("O wins!");
                     ChatTextBox.AppendText(Environment.NewLine);
                     ticTacToe.ResetBoard();
+
+                    // call update 
+                    client.UpdatePoint(gs);
                 }
                 if (gs == GameState.draw)
                 {
                     ChatTextBox.AppendText("Draw!");
                     ChatTextBox.AppendText(Environment.NewLine);
                     ticTacToe.ResetBoard();
+
+                    // call update 
+                    client.UpdatePoint(gs);
                 }
             }
         }

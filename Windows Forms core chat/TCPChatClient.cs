@@ -18,7 +18,7 @@ namespace Windows_Forms_Chat
         public int serverPort;
         public string serverIP;
 
-        public static TCPChatClient CreateInstance(int port, int serverPort, string serverIP, TextBox chatTextBox)
+        public static TCPChatClient CreateInstance(int port, int serverPort, string serverIP, TextBox chatTextBox, TicTacToe ticTacToe)
         {
             TCPChatClient tcp = null;
             //if port values are valid and ip worth attempting to join
@@ -33,10 +33,15 @@ namespace Windows_Forms_Chat
                 tcp.serverIP = serverIP;
                 tcp.chatTextBox = chatTextBox;
                 tcp.clientSocket.socket = tcp.socket;
-
+                tcp.ticTacToe = ticTacToe;
             }
 
             return tcp;
+        }
+
+        public static TicTacToe createInstance()
+        {
+            return new TicTacToe();
         }
 
         public void ConnectToServer()
@@ -125,7 +130,8 @@ namespace Windows_Forms_Chat
                 || text.ToLower() == Common.C_COMMANDS
                 || text.ToLower() == Common.C_STATUS
                 || text.ToLower() == Common.C_SHOWPASSWORD
-                || text.ToLower() == Common.C_JOIN)
+                || text.ToLower() == Common.C_JOIN
+                || text.ToLower() == Common.C_SCORES)
             {
                 //exit the chat
                 byte[] buffer = Encoding.ASCII.GetBytes(text);
@@ -146,6 +152,22 @@ namespace Windows_Forms_Chat
                 if (split.Length != 2)
                 {
                     MessageBox.Show("!login command must have username password");
+                    return;
+                }
+
+                //exit the chat
+                byte[] buffer = Encoding.ASCII.GetBytes(text);
+                socket.Send(buffer, 0, buffer.Length, SocketFlags.None);
+                return;
+            }
+            else if (!string.IsNullOrEmpty(_name)
+                && text.ToLower().Contains(Common.C_POINT + Common.SPACE))
+            {
+                var point = text.Replace(Common.C_POINT, "").Trim();
+                if (!int.TryParse(point, out var newPoint) 
+                    || newPoint > 8 || newPoint < 0)
+                {
+                    MessageBox.Show("Point must be number range [0-8]");
                     return;
                 }
 
@@ -232,7 +254,10 @@ namespace Windows_Forms_Chat
             //text is from server but could have been broadcast from the other clients
             if(!text.ToLower().Contains(Common.C_KICK)
                 && !text.ToLower().Contains(Common.C_LOGIN)
-                && !(text.ToLower() == Common.C_EXIT))
+                && !(text.ToLower() == Common.C_EXIT)
+                && !(text.ToLower().Contains(Common.C_START))
+                && !text.ToLower().Contains(Common.C_POINT)
+                && !text.ToLower().Contains(Common.C_ENDGAME))
                 AddToChat(text);
 
             #region handle commands
@@ -256,6 +281,60 @@ namespace Windows_Forms_Chat
                 _name = text.Replace(Common.C_LOGIN, "").Trim();
                 AddToChat("Login success.");
             }
+            else if (text.ToLower().Contains(Common.C_START + Common.SPACE))
+            {
+                currentClientSocket.name_player = text.Replace(Common.C_START, "").Trim();
+                //start game
+                Action(x => x.ResetBoard());
+
+                if(currentClientSocket.name_player == Common.C_PLAYER1)
+                {
+                    AddToChat("Now is your turn.");
+                    Action(x =>
+                    {
+                        x.myTurn = true;
+                        x.playerTileType = TileType.cross;
+                    });
+                }    
+                else
+                {
+                    Action(x =>
+                    {
+                        x.myTurn = false;
+                        x.playerTileType = TileType.naught;
+                    });
+                }    
+            }
+            else if (text.ToLower().Contains(Common.C_POINT + Common.SPACE))
+            {
+                var point_and_name = text.Replace(Common.C_POINT, "").Trim().Split(';');
+                var point = point_and_name[0];
+                var type = point_and_name[1] == Common.C_PLAYER1 ? TileType.cross : TileType.naught;
+
+                Action(x =>
+                {
+                    x.StringToGrid(point);
+                    x.myTurn = !(point_and_name[1] == currentClientSocket.name_player);
+                });
+            }
+            else if (text.ToLower().Contains(Common.C_ENDGAME))
+            {
+                var win = text.Replace(Common.C_ENDGAME, "").Trim();
+                if(string.IsNullOrEmpty(win))
+                    AddToChat("The result of the match was a draw.");
+                else if(win == _name)
+                    AddToChat("You are the winner.");
+                else
+                    AddToChat("You are the loser.");
+
+                Action(x =>
+                {
+                    x.ResetBoard();
+                });
+
+                // clear player
+                currentClientSocket.name_player = null;
+            }
             #endregion
 
             //we just received a message from this socket, better keep an ear out with another thread for the next one
@@ -268,6 +347,13 @@ namespace Windows_Forms_Chat
         }
 
         public bool IsClose() => socket.Connected;
+
+        public void UpdatePoint(GameState x_o)
+        {
+            var data = $"{Common.C_ENDGAME} {(int)x_o}";
+            byte[] buffer = Encoding.ASCII.GetBytes(data);
+            socket.Send(buffer, 0, buffer.Length, SocketFlags.None);
+        }
     }
 
 }
