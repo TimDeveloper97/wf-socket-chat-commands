@@ -101,6 +101,9 @@ namespace Windows_Forms_Chat
             ClientSocket newClientSocket = new ClientSocket();
             newClientSocket.socket = joiningSocket;
 
+            // update state
+            newClientSocket.state = State.Login;
+
             clientSockets.Add(newClientSocket);
             //start a thread to listen out for this new joining socket. Therefore there is a thread open for each client
             joiningSocket.BeginReceive(newClientSocket.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, newClientSocket);
@@ -201,6 +204,7 @@ namespace Windows_Forms_Chat
                     if (exist != null)
                     {
                         exist.name = username;
+                        exist.state = State.Chatting;
 
                         _names.Add(username);
                         SendToAll($"Username {username} has set success.", exist);
@@ -374,7 +378,21 @@ namespace Windows_Forms_Chat
 
                     byte[] data = Encoding.ASCII.GetBytes(message);
                     currentClientSocket.socket.Send(data);
+
+                    // update state
+                    var existClient = clientSockets.FirstOrDefault(x => x.name == currentClientSocket.name);
+                    if (existClient != null)
+                        existClient.state = State.Chatting;
                 }
+            }
+            else if (text.ToLower() == Common.C_STATUS)
+            {
+                currentClientSocket.socket.Send(Encoding.ASCII.GetBytes($"Your status is {currentClientSocket.state}"));
+            }
+            else if (text.ToLower() == Common.C_SHOWPASSWORD)
+            {
+                var exist = _userRepository.GetAll(_connection).FirstOrDefault(x => x.Username == currentClientSocket.name);
+                currentClientSocket.socket.Send(Encoding.ASCII.GetBytes($"Your password is {exist.Password}"));
             }
             else
             {
