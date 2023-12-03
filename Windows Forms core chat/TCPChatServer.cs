@@ -143,7 +143,22 @@ namespace Windows_Forms_Chat
             {
                 var commands = Common._commands;
                 commands.Remove(Common.C_KICK);
-                byte[] data = Encoding.ASCII.GetBytes("Commands are " + String.Join(" ", commands));
+                byte[] data = Encoding.ASCII.GetBytes(
+                   (char)13 + "\n-------------------------------------"
+                 + (char)13 + "\nSERVER COMMAND LIST:"
+                 + (char)13 + "\n!user: Set your new user name."
+                 + (char)13 + "\nCommand Syntax: !user[space]your_new_name"
+                 + (char)13 + "\n-------------------------------------"
+                 + (char)13 + "\n!who: Shows a list of all connected clients."
+                 + (char)13 + "\n-------------------------------------"
+                 + (char)13 + "\n!about: Show information about this application."
+                 + (char)13 + "\n-------------------------------------"
+                 + (char)13 + "\n!timestamps: Show the date and time of messages."
+                 + (char)13 + "\n-------------------------------------"
+                 + (char)13 + "\n!whisper: Send a private message to a person."
+                 + (char)13 + "\nCommand Syntax: !whisper[space]to_client_name[space]message"
+                 + (char)13 + "\n-------------------------------------"
+                 + (char)13 + "\n!exit: Disconnect from the server.");
                 currentClientSocket.socket.Send(data);
                 AddToChat("Commands sent to client");
             }
@@ -228,14 +243,19 @@ namespace Windows_Forms_Chat
             {
                 //var username = text.Substring(1, text.IndexOf(']') - 1);
                 // send client name
-                byte[] success = Encoding.ASCII.GetBytes($"Users are {string.Join(" ", _names)}");
+                byte[] success = Encoding.ASCII.GetBytes($"Connecting users are: \n{string.Join(", ", _names)}");
                 currentClientSocket.socket.Send(success);
             }
             else if (text.ToLower().Contains(Common.C_ABOUT))
             {
                 var username = text.Substring(1, text.IndexOf(']') - 1);
                 // send client name
-                byte[] success = Encoding.ASCII.GetBytes($"Project develop by Khuat and Hai.\nTarget using for work and study.\nTime: {DateTime.Now}");
+                byte[] success = Encoding.ASCII.GetBytes(
+                      (char)13 + "\n-------------------------------------"
+                    + (char)13 + "\nInformation of Application"
+                    + (char)13 + "\nCreator: Manh Hoang Khuat."
+                    + (char)13 + "\nPurposed: Assignment 2."
+                    + (char)13 + "\nDevelopment Year: 2023");
                 currentClientSocket.socket.Send(success);
             }
             else if (text.ToLower().Contains(Common.C_WHISPER))
@@ -258,7 +278,7 @@ namespace Windows_Forms_Chat
                     var socket = clientSockets.FirstOrDefault(x => x.name == target);
                     var tmp = "";
                     if (socket.name != currentClientSocket.name)
-                        tmp = $"Private from [{currentClientSocket.name}] to [{socket.name}] " + message;
+                        tmp = $"[Whisper] Private message from [{currentClientSocket.name}] to you: " + message;
                     else
                         tmp = $"You can't send message to you.";
 
@@ -301,7 +321,9 @@ namespace Windows_Forms_Chat
                     _names.Remove(username);
                     foreach (var item in clientSockets)
                     {
-                        byte[] data = Encoding.ASCII.GetBytes($"[{username}] remove from server.");
+                        byte[] data = Encoding.ASCII.GetBytes(
+                            $"[{username}] remove from server."
+                          + (char)13 + "\n-------------------------------------------");
                         item.socket.Send(data);
                     }
 
@@ -309,7 +331,9 @@ namespace Windows_Forms_Chat
                 }
                 else
                 {
-                    byte[] success = Encoding.ASCII.GetBytes($"Username {username} doesn't exist.");
+                    byte[] success = Encoding.ASCII.GetBytes(
+                            $"Username {username} doesn't exist."
+                          + (char)13 + "\n-------------------------------------------");
                     currentClientSocket.socket.Send(success);
                 }
             }
@@ -340,9 +364,11 @@ namespace Windows_Forms_Chat
                 exist.isMod = !exist.isMod;
                 var message = "";
                 if (exist.isMod)
-                    message = $"Promote user {username} to mod.";
+                    message = $"Promote user {username} to mod."
+                    + (char)13 + "\n-------------------------------------------";
                 else
-                    message = $"Demote user {username}.";
+                    message = $"Demote user {username}."
+                    + (char)13 + "\n-------------------------------------------";
 
                 AddToChat(message);
                 SendToAll(message, from);
@@ -350,7 +376,7 @@ namespace Windows_Forms_Chat
             else if (str.ToLower() == Common.C_MODS)
             {
                 var mods = clientSockets.Where(x => x.isMod);
-                AddToChat("Mods are " + (mods.Count() != 0 ? String.Join(" ", mods.Select(x => x.name)) : "empty."));
+                AddToChat("Mods are: " + (mods.Count() != 0 ? String.Join(" ", mods.Select(x => x.name)) : "empty."));
             }
             else if (str.ToLower().Contains(Common.C_KICK + Common.SPACE))
             {

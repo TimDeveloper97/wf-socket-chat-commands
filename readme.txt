@@ -12,12 +12,13 @@ Clients should be able to type messages to the server and the server can broadca
 
 The Project
 ============
-In Visual Studio if you open Form1.cs it should open the Windows Forms designer. If you right click textboxes or buttons you can see that they have a name property which is how we can access them via code. Take note of the main ui elements names here.
-
-If you right click Form1.cs in the solution explorer you can 'View Code'. Explore the code and try to understand it.
-
-The server creates an asynchronous task(thread) to keep listening for joining clients. If a client joins, a new thread is created to start listening for incoming messages from that client. So in total, the server has the main thread the UI runs on, the listening to joining client threads and as many extra threads running for joined clients sending messages in.
-
-You will need to work through the code to work out where and how to add to it.
-
-The Tic-Tac-Toe board is for the final assignment and only works for Cross player but detects wins and resets the board.
+*** COMMANDS ***
+!username: let user get username when they join the server.
+!user: change username.
+!who: shows who are connecting to the server.
+!about: shows information of application.
+!timestamps: on/off time with messages.
+!whisper: send private messages to an user.
+!mod: promote/demote an user as a 'mod' role.
+!mods: list of mod in the server.
+!kick: disconnect an user as a mod.
