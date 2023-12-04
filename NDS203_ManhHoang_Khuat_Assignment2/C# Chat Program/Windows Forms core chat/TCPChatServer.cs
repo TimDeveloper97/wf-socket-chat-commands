@@ -235,7 +235,7 @@ namespace Windows_Forms_Chat
                         exist.state = State.Chatting;
 
                         _names.Add(username);
-                        SendToAll($"Username {username} has set success.", exist);
+                        SendToAll($"Username {username} has set success. \nNow you are at chatting state!", exist);
                     }
 
                     // insert to db

@@ -65,6 +65,8 @@ namespace Windows_Forms_Chat
             }
 
             AddToChat("Connected");
+            AddToChat("Login state!");
+            AddToChat("Create new user or login existing account");
             //keep open thread for receiving data
             clientSocket.socket.BeginReceive(clientSocket.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, clientSocket);
         }
@@ -200,7 +202,7 @@ namespace Windows_Forms_Chat
             {
                 if (!text.ToLower().Contains(Common.C_USERNAME + Common.SPACE))
                 {
-                    MessageBox.Show("You must enter name befor chat");
+                    MessageBox.Show("You must enter name before chat");
                     return;
                 }
 
@@ -279,7 +281,7 @@ namespace Windows_Forms_Chat
             {
                 //get username
                 _name = text.Replace(Common.C_LOGIN, "").Trim();
-                AddToChat("Login success.");
+                AddToChat("Login success. Now you are at chatting state!");
             }
             else if (text.ToLower().Contains(Common.C_START + Common.SPACE))
             {
