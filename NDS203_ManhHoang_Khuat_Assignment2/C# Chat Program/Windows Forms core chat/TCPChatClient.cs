@@ -255,7 +255,7 @@ namespace Windows_Forms_Chat
 
             //text is from server but could have been broadcast from the other clients
             if(!text.ToLower().Contains(Common.C_KICK)
-                && !text.ToLower().Contains(Common.C_LOGIN)
+                && !(text.ToLower().Trim().Substring(0, 6) == Common.C_LOGIN)
                 && !(text.ToLower() == Common.C_EXIT)
                 && !(text.ToLower().Contains(Common.C_START))
                 && !text.ToLower().Contains(Common.C_POINT)
