@@ -289,7 +289,6 @@ namespace Windows_Forms_Chat
 
                 if(currentClientSocket.name_player == Common.C_PLAYER1)
                 {
-                    AddToChat("Now is your turn.");
                     Action(x =>
                     {
                         x.myTurn = true;

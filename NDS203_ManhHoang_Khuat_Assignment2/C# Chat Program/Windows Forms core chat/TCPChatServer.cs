@@ -441,34 +441,49 @@ namespace Windows_Forms_Chat
                     currentClientSocket.name_player = Common.C_PLAYER1;
                     currentClientSocket.state = State.Playing;
 
-                    message = $"You are {Common.C_PLAYER1}";
+                    message = $"{Common.C_PLAYER1} is User {currentClientSocket.name}";
                     _isPlayer1 = true;
+
+                    SendToAll(message, null);
                 }
                 else if(!_isPlayer2)
                 {
                     currentClientSocket.name_player = Common.C_PLAYER2;
                     currentClientSocket.state = State.Playing;
 
-                    message = $"You are {Common.C_PLAYER2}";
+                    message = $"{Common.C_PLAYER2} is User {currentClientSocket.name}";
                     _isPlayer2 = true;
+
+                    SendToAll(message, null);
                 }
                 else if(currentClientSocket.name_player != null)
+                {
                     message = $"You are {currentClientSocket.name_player}";
+                    currentClientSocket.socket.Send(Encoding.ASCII.GetBytes(message));
+                }
                 else
+                {
                     message = $"TicTacToe game current out of slot.";
-
-                currentClientSocket.socket.Send(Encoding.ASCII.GetBytes(message));
-
+                    SendToAll(message, null);
+                }
+                
+                // enough player
                 if(_isPlayer1 && _isPlayer2)
                 {
                     foreach (var client in clientSockets)
                     {
                         if(client.name_player != null)
+                        {
                             client.socket.Send(Encoding.ASCII.GetBytes($"{Common.C_START} {client.name_player}"));
+                            client.state = State.Playing;
+                        }
                     }
 
                     Thread.Sleep(10);
                     SendToAll("The number of people is enough. The game begins.", null);
+
+                    var player1 = clientSockets.FirstOrDefault(x => x.name_player == Common.C_PLAYER1);
+                    SendToAll($"Now, It's {player1.name} turn.", null);
 
                     //reset board server
                     Action(x => x.ResetBoard());
@@ -494,14 +509,11 @@ namespace Windows_Forms_Chat
                 });
 
                 foreach (var client in clientSockets)
-                {
-                    if (client.name_player != null)
-                        client.socket.Send(Encoding.ASCII.GetBytes($"{Common.C_POINT} {result};{currentClientSocket.name_player}"));
-                }
+                    client.socket.Send(Encoding.ASCII.GetBytes($"{Common.C_POINT} {result};{currentClientSocket.name_player}"));
 
                 Thread.Sleep(10);
                 var next = clientSockets.FirstOrDefault(x => x.name_player != null && x.name_player != currentClientSocket.name_player);
-                SendToAll($"It's {next.name} turn.", null);
+                SendToAll($"Now, It's {next.name} turn.", null);
             }
             else if (text.ToLower().Contains(Common.C_ENDGAME))
             {
@@ -513,7 +525,7 @@ namespace Windows_Forms_Chat
                 string message = "";
                 var users = _userRepository.GetAll(_connection).OrderByDescending(x => x.Win);
                 message = $"Scores are "
-                        + (char)13 + "\n[User] [Win] [Draw] [Lose]";
+                        + "\n\r[User] [Win] [Draw] [Lose]";
                 foreach (var user in users)
                 {
                     message += (char)13 + $"\n{user.Username}    {user.Win}    {user.Draw}     {user.Lose}";
@@ -622,6 +634,7 @@ namespace Windows_Forms_Chat
             var player1 = clientSockets.FirstOrDefault(x => x.name_player == Common.C_PLAYER1);
             var player2 = clientSockets.FirstOrDefault(x => x.name_player == Common.C_PLAYER2);
             string message = "";
+            string winner = "";
 
             // player 1
             if (x_o == GameState.crossWins)
@@ -630,6 +643,7 @@ namespace Windows_Forms_Chat
                 _userRepository.Update(_connection, player2.name, $"Lose = '{++player2.lose}'");
 
                 message = $"{Common.C_ENDGAME} {player1.name}";
+                winner = $"The winner is {player1.name}.";
             }
             // player 2
             else if (x_o == GameState.naughtWins)
@@ -638,6 +652,7 @@ namespace Windows_Forms_Chat
                 _userRepository.Update(_connection, player1.name, $"Lose = '{++player1.lose}'");
 
                 message = $"{Common.C_ENDGAME} {player2.name}";
+                winner = $"The winner is {player2.name}.";
             }
             // draw
             else if (x_o == GameState.draw)
@@ -646,6 +661,7 @@ namespace Windows_Forms_Chat
                 _userRepository.Update(_connection, player1.name, $"Draw = '{++player1.draw}'");
 
                 message = $"{Common.C_ENDGAME}";
+                winner = $"The match of {player1.name} and {player2.name} is a draw";
             }
 
             player1.socket.Send(Encoding.ASCII.GetBytes(message));
@@ -659,6 +675,8 @@ namespace Windows_Forms_Chat
                     client.state = State.Chatting;
                     client.name_player = null;
                 }    
+                else
+                    client.socket.Send(Encoding.ASCII.GetBytes(winner));
             }
             _isPlayer1 = false; _isPlayer2 = false;
 
