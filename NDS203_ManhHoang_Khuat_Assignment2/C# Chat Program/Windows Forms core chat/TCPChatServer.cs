@@ -165,7 +165,21 @@ namespace Windows_Forms_Chat
                  + (char)13 + "\n!whisper: Send a private message to a person."
                  + (char)13 + "\nCommand Syntax: !whisper[space]to_client_name[space]message"
                  + (char)13 + "\n-------------------------------------"
-                 + (char)13 + "\n!exit: Disconnect from the server.");
+                 + (char)13 + "\n!exit: Disconnect from the server."
+                 + (char)13 + "\n-------------------------------------"
+                 + (char)13 + "\n!login: Login to the server."
+                 + (char)13 + "\nCommand Syntax: !login[space][username][space][password]"
+                 + (char)13 + "\n-------------------------------------"
+                 + (char)13 + "\n!showpassword: Show password of current user."
+                 + (char)13 + "\n-------------------------------------"
+                 + (char)13 + "\n!password: Change password of current user."
+                 + (char)13 + "\nCommand Syntax: !password[space][newpassword]"
+                 + (char)13 + "\n-------------------------------------"
+                 + (char)13 + "\n!status: Get status of current user."
+                 + (char)13 + "\n-------------------------------------"
+                 + (char)13 + "\n!scores: Get all scores of all user."
+                 + (char)13 + "\n-------------------------------------"
+                 + (char)13 + "\n!join: join the game.");
                 currentClientSocket.socket.Send(data);
                 AddToChat("Commands sent to client");
             }
