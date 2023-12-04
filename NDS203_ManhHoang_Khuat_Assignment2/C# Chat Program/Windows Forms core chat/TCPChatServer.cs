@@ -111,6 +111,7 @@ namespace Windows_Forms_Chat
             clientSockets.Add(newClientSocket);
             //start a thread to listen out for this new joining socket. Therefore there is a thread open for each client
             joiningSocket.BeginReceive(newClientSocket.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, newClientSocket);
+            AddToChat("\n--------------------------");
             AddToChat("Client connected, waiting for request...");
 
             //we finished this accept thread, better kick off another so more people can join
@@ -130,6 +131,7 @@ namespace Windows_Forms_Chat
             }
             catch (SocketException)
             {
+                AddToChat("\n--------------------------");
                 AddToChat("Client forcefully disconnected");
 
                 // Don't shutdown because the socket may be disposed and its disconnected anyway.
@@ -179,7 +181,7 @@ namespace Windows_Forms_Chat
                  + (char)13 + "\n-------------------------------------"
                  + (char)13 + "\n!scores: Get all scores of all user."
                  + (char)13 + "\n-------------------------------------"
-                 + (char)13 + "\n!join: join the game.");
+                 + (char)13 + "\n!join: Join the game.");
                 currentClientSocket.socket.Send(data);
                 AddToChat("Commands sent to client");
             }
@@ -204,6 +206,7 @@ namespace Windows_Forms_Chat
                     _names.Remove(currentClientSocket.name);
 
                 clientSockets.Remove(currentClientSocket);
+                AddToChat("\n--------------------------");
                 AddToChat("Client disconnected");
                 return;
             }
@@ -219,6 +222,7 @@ namespace Windows_Forms_Chat
                     currentClientSocket.socket.Send(data);
                     currentClientSocket.socket.Send(kick);
 
+                    AddToChat("\n--------------------------");
                     AddToChat("Client disconnected");
 
                     // Don't shutdown because the socket may be disposed and its disconnected anyway.
@@ -235,7 +239,8 @@ namespace Windows_Forms_Chat
                         exist.state = State.Chatting;
 
                         _names.Add(username);
-                        SendToAll($"Username {username} has set success. \nNow you are at chatting state!", exist);
+                        AddToChat("\n--------------------------");
+                        SendToAll($"Username {username} has set success!", exist);
                     }
 
                     // insert to db
@@ -276,6 +281,7 @@ namespace Windows_Forms_Chat
                     currentClientSocket.socket.Send(success);
 
                     //normal message broadcast out to all clients
+                    AddToChat("\n--------------------------");
                     HandleSendToAll($"User [{username}] has change name to [{newusername}]", currentClientSocket);
                 }
             }
@@ -294,7 +300,7 @@ namespace Windows_Forms_Chat
                       (char)13 + "\n-------------------------------------"
                     + (char)13 + "\nInformation of Application"
                     + (char)13 + "\nCreator: Manh Hoang Khuat."
-                    + (char)13 + "\nPurposed: Assignment 2."
+                    + (char)13 + "\nPurposed: Assignment 3."
                     + (char)13 + "\nDevelopment Year: 2023");
                 currentClientSocket.socket.Send(success);
             }
@@ -318,6 +324,7 @@ namespace Windows_Forms_Chat
                     var socket = clientSockets.FirstOrDefault(x => x.name == target);
                     var tmp = "";
                     if (socket.name != currentClientSocket.name)
+                        AddToChat("\n--------------------------");
                         tmp = $"[Whisper] Private message from [{currentClientSocket.name}] to you: " + message;
                     else
                         tmp = $"You can't send message to you.";
@@ -353,6 +360,7 @@ namespace Windows_Forms_Chat
                     byte[] kick = Encoding.ASCII.GetBytes(Common.C_KICK);
                     exist.socket.Send(kick);
 
+                    AddToChat("\n--------------------------");
                     AddToChat("Client disconnected");
 
                     // Don't shutdown because the socket may be disposed and its disconnected anyway.
@@ -435,8 +443,10 @@ namespace Windows_Forms_Chat
                 var exist = _userRepository.GetAll(_connection).FirstOrDefault(x => x.Username == currentClientSocket.name);
                 string message;
                 if (exist != null)
+                    AddToChat("\n--------------------------");
                     message = $"Your password is {exist.Password}";
                 else
+                    AddToChat("\n--------------------------");
                     message = $"You are not login or register.";
                 currentClientSocket.socket.Send(Encoding.ASCII.GetBytes(message));
             }
@@ -472,11 +482,13 @@ namespace Windows_Forms_Chat
                 }
                 else if(currentClientSocket.name_player != null)
                 {
+                    AddToChat("\n--------------------------");
                     message = $"You are {currentClientSocket.name_player}";
                     currentClientSocket.socket.Send(Encoding.ASCII.GetBytes(message));
                 }
                 else
                 {
+                    AddToChat("\n--------------------------");
                     message = $"TicTacToe game current out of slot.";
                     SendToAll(message, null);
                 }

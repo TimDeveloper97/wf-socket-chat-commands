@@ -66,7 +66,7 @@ namespace Windows_Forms_Chat
 
             AddToChat("Connected");
             AddToChat("Login state!");
-            AddToChat("Create new user or login existing account");
+            AddToChat("Create a new user or login existing account");
             //keep open thread for receiving data
             clientSocket.socket.BeginReceive(clientSocket.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, clientSocket);
         }
@@ -324,9 +324,9 @@ namespace Windows_Forms_Chat
                 if(string.IsNullOrEmpty(win))
                     AddToChat("The result of the match was a draw.");
                 else if(win == _name)
-                    AddToChat("You are the winner.");
+                    AddToChat("You won!");
                 else
-                    AddToChat("You are the loser.");
+                    AddToChat("Unlucky, you lost!");
 
                 Action(x =>
                 {
