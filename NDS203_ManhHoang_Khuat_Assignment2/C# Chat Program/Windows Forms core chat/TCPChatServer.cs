@@ -68,13 +68,14 @@ namespace Windows_Forms_Chat
 
         public void SetupServer()
         {
-            chatTextBox.Text += "Setting up server...\n";
+            chatTextBox.Text += "\nSetting up server..........";
             serverSocket.Bind(new IPEndPoint(IPAddress.Any, port));
             serverSocket.Listen(0);
 
             //kick off thread to read connecting clients, when one connects, it'll call out AcceptCallback function
             serverSocket.BeginAccept(AcceptCallback, this);
-            chatTextBox.Text += "Server setup complete\n";
+            chatTextBox.Text += "\nServer setup complete";
+            chatTextBox.Text += "";
         }
 
         public void CloseAllSockets()
@@ -241,6 +242,7 @@ namespace Windows_Forms_Chat
                         _names.Add(username);
                         AddToChat("\n--------------------------");
                         SendToAll($"Username {username} has set success!", exist);
+                        AddToChat("Now you are at Chatting State");
                     }
 
                     // insert to db
@@ -324,7 +326,6 @@ namespace Windows_Forms_Chat
                     var socket = clientSockets.FirstOrDefault(x => x.name == target);
                     var tmp = "";
                     if (socket.name != currentClientSocket.name)
-                        AddToChat("\n--------------------------");
                         tmp = $"[Whisper] Private message from [{currentClientSocket.name}] to you: " + message;
                     else
                         tmp = $"You can't send message to you.";
@@ -443,10 +444,8 @@ namespace Windows_Forms_Chat
                 var exist = _userRepository.GetAll(_connection).FirstOrDefault(x => x.Username == currentClientSocket.name);
                 string message;
                 if (exist != null)
-                    AddToChat("\n--------------------------");
                     message = $"Your password is {exist.Password}";
                 else
-                    AddToChat("\n--------------------------");
                     message = $"You are not login or register.";
                 currentClientSocket.socket.Send(Encoding.ASCII.GetBytes(message));
             }
@@ -521,7 +520,7 @@ namespace Windows_Forms_Chat
                 if (!int.TryParse(point, out var newPoint)
                     || newPoint > 8 || newPoint < 0)
                 {
-                    MessageBox.Show("Point must be number range [0-8]");
+                    MessageBox.Show("Point must be number range [1-9]");
                     return;
                 }
 
@@ -706,7 +705,7 @@ namespace Windows_Forms_Chat
             }
             _isPlayer1 = false; _isPlayer2 = false;
 
-            SendToAll("The match has ended everyone can join the match.", null);
+            SendToAll("The match has ended, players are back to Chatting State. \nEveryone can join the game!", null);
         }
     }
 }
