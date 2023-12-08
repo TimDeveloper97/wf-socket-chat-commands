@@ -23,3 +23,4 @@ The Project
 !mod: promote/demote an user as a 'mod' role.
 !mods: list of mod in the server.
 !kick: disconnect an user as a mod.
+!login: login to an existing account
