@@ -14,13 +14,24 @@ Clients should be able to type messages to the server and the server can broadca
 The Project
 ============
 *** COMMANDS ***
-!username: let user get username when they join the server.
-!user: change username.
-!who: shows who are connecting to the server.
 !about: shows information of application.
-!timestamps: on/off time with messages.
-!whisper: send private messages to an user.
+!join: join the game.
+!kick: disconnect an user as a mod.
+!login: login to an existing account.
 !mod: promote/demote an user as a 'mod' role.
 !mods: list of mod in the server.
-!kick: disconnect an user as a mod.
-!login: login to an existing account
+!password: change password.
+!scores: get scoreboard of the game.
+!showpassword: show password of current user.
+!status: check status of current user.
+!timestamps: on/off time with messages.
+!user: change username.
+!username: let user get username when they join the server.
+!whisper: send private messages to an user.
+!who: shows who are connecting to the server.
+
+
+
+
+
+
